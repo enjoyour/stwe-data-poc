@@ -22,13 +22,13 @@ public class BaoguandanController {
 
     /**
      * 获取报关单数据
-     * @param number 单据编号，如 AC09008VT
+     * @param number 报关单号，如 310120210519750857
      * @return 报关单数据
      */
     @GetMapping("/view")
-    @Operation(summary = "查询报关单", description = "根据单据编号查询报关单数据")
+    @Operation(summary = "查询报关单", description = "根据报关单号查询报关单数据（先通过ExecuteBillQuery获取单据编号，再查询详情）")
     public String viewBaoguandan(
-            @Parameter(description = "单据编号", example = "AC09008VT", required = true)
+            @Parameter(description = "报关单号", example = "310120210519750857", required = true)
             @RequestParam String number) {
         log.info("收到查询报关单请求，Number: {}", number);
         return baoguandanService.getBaoguandan(number);
