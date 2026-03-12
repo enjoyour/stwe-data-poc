@@ -18,6 +18,7 @@ public class BaoguandanService {
 
     private static final String VIEW_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.View.common.kdsvc";
     private static final String QUERY_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc";
+    private static final String AUTH_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.AuthService.ValidateUser.common.kdsvc";
     private static final int LOCALE_ID = 2025;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -29,6 +30,13 @@ public class BaoguandanService {
      */
     public String getBaoguandan(String number) {
         try {
+            // 第零步：登录
+            String authUrl = k3cloudUrl + AUTH_URL_SUFFIX;
+            boolean loginSuccess = K3cloudUtil.login(authUrl, "65f0680c543e6b", "999999", "pop909", 2052);
+            if (!loginSuccess) {
+                throw new RuntimeException("K3Cloud 登录失败，请检查账号密码");
+            }
+
             // 第一步：执行单据查询，获取单据编号
             String queryUrl = k3cloudUrl + QUERY_URL_SUFFIX;
             log.info("执行单据查询，URL: {}, Number: {}", queryUrl, number);

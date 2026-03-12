@@ -1,17 +1,61 @@
 package com.toowe.stwe.util;
 
 import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.HttpCookie;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
 public class K3cloudUtil {
+
+    private static List<HttpCookie> cookies;
+
+    /**
+     * 登录 K3Cloud
+     */
+    public static boolean login(String url, String dbId, String user, String pwd, int lang) throws Exception {
+        JSONArray paras = new JSONArray();
+        paras.add(dbId);
+        paras.add(user);
+        paras.add(pwd);
+        paras.add(lang);
+
+        Map<String, Object> formParams = new HashMap<>();
+        formParams.put("format", 1);
+        formParams.put("useragent", "ApiClient");
+        formParams.put("rid", UUID.randomUUID().toString().hashCode());
+        formParams.put("parameters", paras.toString());
+        formParams.put("timestamp", new Date().toString());
+        formParams.put("v", "1.0");
+
+        log.info("K3Cloud Login Request: URL={}, Params={}", url, formParams);
+
+        HttpResponse response = HttpRequest.post(url)
+                .form(formParams)
+                .execute();
+
+        String body = response.body();
+        log.info("K3Cloud Login Response: {}", body);
+
+        JSONObject json = JSONUtil.parseObj(body);
+        if (json.getInt("LoginResultType") == 1) {
+            cookies = response.getCookies();
+            log.info("登录成功，获取到 {} 个 Cookie", cookies.size());
+            return true;
+        } else {
+            log.error("登录失败: {}", body);
+            return false;
+        }
+    }
 
     /**
      * 中文字符转Unicode
@@ -32,9 +76,6 @@ public class K3cloudUtil {
 
     /**
      * 查询报关单数据 (View 接口)
-     * @param url K3Cloud接口地址
-     * @param number 单据编号
-     * @return 查询结果
      */
     public static String viewBaoguandan(String url, String number) throws Exception {
         JSONArray paras = new JSONArray();
@@ -55,19 +96,15 @@ public class K3cloudUtil {
 
         log.info("K3Cloud Request (View) [Form]: URL={}, Params={}", url, formParams);
 
-        String response = HttpRequest.post(url)
+        return HttpRequest.post(url)
                 .form(formParams)
+                .cookie(cookies)
                 .execute()
                 .body();
-
-        return response;
     }
 
     /**
      * 执行单据查询 (ExecuteBillQuery 接口)
-     * @param url K3Cloud接口地址
-     * @param number 报关单号
-     * @return 单据编号
      */
     public static String executeBillQuery(String url, String number) throws Exception {
         JSONObject data = new JSONObject();
@@ -100,11 +137,10 @@ public class K3cloudUtil {
 
         log.info("K3Cloud Request (Query) [Form]: URL={}, Params={}", url, formParams);
 
-        String response = HttpRequest.post(url)
+        return HttpRequest.post(url)
                 .form(formParams)
+                .cookie(cookies)
                 .execute()
                 .body();
-
-        return response;
     }
 }
