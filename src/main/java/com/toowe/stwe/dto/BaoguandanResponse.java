@@ -1,18 +1,20 @@
 package com.toowe.stwe.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BaoguandanResponse {
 
     @JsonProperty("Result")
     private Result result;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Result {
         @JsonProperty("ResponseStatus")
         private ResponseStatus responseStatus;
@@ -22,13 +24,18 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ResponseStatus {
         @JsonProperty("IsSuccess")
         private Boolean isSuccess;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BaoguandanData {
+        @JsonProperty("Id")
+        private String id;
+
         @JsonProperty("F_ora_baoguanno")
         private String foraBaoGuanno;
 
@@ -52,6 +59,7 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ForaTerms {
         @JsonProperty("Id")
         private String id;
@@ -67,6 +75,7 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SettleCurrency {
         @JsonProperty("Id")
         private Long id;
@@ -82,6 +91,7 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class MultiLanguageText {
         @JsonProperty("PkId")
         private String pkId;
@@ -94,6 +104,7 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CurrencyName {
         @JsonProperty("PkId")
         private Long pkId;
@@ -106,6 +117,7 @@ public class BaoguandanResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class KeyValue {
         @JsonProperty("Key")
         private Integer key;
