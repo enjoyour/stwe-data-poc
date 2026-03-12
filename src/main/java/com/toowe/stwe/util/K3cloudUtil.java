@@ -2,6 +2,7 @@ package com.toowe.stwe.util;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -11,6 +12,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.UUID;
 
+@Slf4j
 public class K3cloudUtil {
 
 
@@ -42,6 +44,8 @@ public class K3cloudUtil {
         jObj.put("parameters", chinaToUnicode(paras.toString()));
         jObj.put("timestamp", new Date().toString());
         jObj.put("v", "1.0");
+
+        log.info("K3Cloud Request (View): {}", jObj.toString());
 
         out.writeBytes(jObj.toString());
         out.flush();
@@ -145,6 +149,8 @@ public class K3cloudUtil {
         jObj.put("data", data.toString());
         jObj.put("timestamp", new Date().toString());
         jObj.put("v", "1.0");
+
+        log.info("K3Cloud Request (Query): {}", jObj.toString());
 
         out.writeBytes(jObj.toString());
         out.flush();
