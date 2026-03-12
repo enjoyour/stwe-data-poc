@@ -2,6 +2,8 @@ package com.toowe.stwe.service;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.toowe.stwe.dto.BaoguandanResponse;
 import com.toowe.stwe.util.K3cloudUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,12 +19,14 @@ public class BaoguandanService {
     private static final String VIEW_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.View.common.kdsvc";
     private static final String QUERY_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc";
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * 获取报关单数据
      * @param number 报关单号，如 310120210519750857
      * @return 查询结果
      */
-    public String getBaoguandan(String number) {
+    public BaoguandanResponse getBaoguandan(String number) {
         try {
             // 第一步：执行单据查询，获取单据编号
             String queryUrl = k3cloudUrl + QUERY_URL_SUFFIX;
@@ -42,7 +46,10 @@ public class BaoguandanService {
             // 第二步：使用单据编号查询报关单详情
             String viewUrl = k3cloudUrl + VIEW_URL_SUFFIX;
             log.info("查询报关单详情，URL: {}, BillNo: {}", viewUrl, billNo);
-            return K3cloudUtil.viewBaoguandan(viewUrl, billNo);
+            String viewResult = K3cloudUtil.viewBaoguandan(viewUrl, billNo);
+
+            // 解析为响应对象
+            return objectMapper.readValue(viewResult, BaoguandanResponse.class);
 
         } catch (Exception e) {
             log.error("查询报关单失败，Number: {}", number, e);
