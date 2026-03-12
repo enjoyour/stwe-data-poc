@@ -1,9 +1,9 @@
 package com.toowe.stwe.service;
 
 import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toowe.stwe.dto.BaoguandanResponse;
-import com.toowe.stwe.dto.BaoguandanVO;
 import com.toowe.stwe.util.K3cloudUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,9 +25,9 @@ public class BaoguandanService {
     /**
      * 获取报关单数据
      * @param number 报关单号，如 310120210519750857
-     * @return 查询结果
+     * @return 查询结果JSON字符串
      */
-    public BaoguandanVO getBaoguandan(String number) {
+    public String getBaoguandan(String number) {
         try {
             // 第一步：执行单据查询，获取单据编号
             String queryUrl = k3cloudUrl + QUERY_URL_SUFFIX;
@@ -51,7 +51,7 @@ public class BaoguandanService {
 
             // 解析为响应对象
             BaoguandanResponse response = objectMapper.readValue(viewResult, BaoguandanResponse.class);
-            return convertToVO(response);
+            return convertToJson(response);
 
         } catch (Exception e) {
             log.error("查询报关单失败，Number: {}", number, e);
@@ -60,15 +60,16 @@ public class BaoguandanService {
     }
 
     /**
-     * 转换为简化的VO对象
+     * 转换为JSON字符串
      */
-    private BaoguandanVO convertToVO(BaoguandanResponse response) {
-        BaoguandanVO vo = new BaoguandanVO();
+    private String convertToJson(BaoguandanResponse response) {
         BaoguandanResponse.BaoguandanData data = response.getResult().getResult();
 
-        vo.setBaoGuanno(data.getForaBaoGuanno());
-        vo.setXieyiNo(data.getForaXieyiNo());
-        vo.setKaichuanDate(data.getKaichuanDate());
+        JSONObject result = new JSONObject();
+
+        result.set("报关单号", data.getForaBaoGuanno());
+        result.set("合同协议号", data.getForaXieyiNo());
+        result.set("实际开船日期", data.getKaichuanDate());
 
         // 获取运输条款 - 取LocaleId=2025的MultiLanguageText的FDataValue
         if (data.getForaTerms() != null && data.getForaTerms().getMultiLanguageText() != null) {
@@ -77,7 +78,10 @@ public class BaoguandanService {
                     .findFirst()
                     .map(BaoguandanResponse.MultiLanguageText::getFDataValue)
                     .orElse(null);
-            vo.setTerms(terms);
+            result.set("运输条款", terms);
+
+            // FCODE从F_ora_terms的FNumber获取
+            result.set("FCODE", data.getForaTerms().getFNumber());
         }
 
         // 获取结算币别 - 取LocaleId=2025的MultiLanguageText的Name
@@ -87,14 +91,13 @@ public class BaoguandanService {
                     .findFirst()
                     .map(BaoguandanResponse.CurrencyName::getName)
                     .orElse(null);
-            vo.setSettleCurrency(currency);
+            result.set("结算币别", currency);
         }
 
-        vo.setFcode(data.getForaTerms() != null ? data.getForaTerms().getFNumber() : null);
-        vo.setFsymbol(null); // 需要从原始数据中获取，暂时为null
-        vo.setTotalAmount(data.getTotalAmount());
-        vo.setQuantity(data.getQuantity());
+        result.set("FSYMBOL", null);
+        result.set("总金额", data.getTotalAmount());
+        result.set("数量", data.getQuantity());
 
-        return vo;
+        return result.toString();
     }
 }
