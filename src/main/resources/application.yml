@@ -23,7 +23,7 @@ springdoc:
     - group: 'default'
       display-name: '测试'
       paths-to-match: '/**'
-      packages-to-scan: com.toowe.admin.controller
+      packages-to-scan: com.toowe.stwe.controller
   default-flat-param-object: true
 
 
@@ -46,3 +46,6 @@ knife4j:
     secret: S6CsnS8AnPVyb8vvChcdXm4R3p6A6KlAISxBg3IIEgk=
     server: http://localhost:10086
     namespace: spring3
+
+k3cloud:
+  url: http://192.168.1.47/K3Cloud
