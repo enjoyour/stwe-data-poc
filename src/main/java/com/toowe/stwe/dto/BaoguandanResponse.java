@@ -44,7 +44,11 @@ public class BaoguandanResponse {
         @JsonProperty("F_ora_SETTLECURRID")
         private SettleCurrency settleCurrency;
 
-        // 可以根据需要添加更多字段
+        @JsonProperty("F_STWR_ZAMOUNT")
+        private Double totalAmount;
+
+        @JsonProperty("FQTY")
+        private Double quantity;
     }
 
     @Data

@@ -1,6 +1,6 @@
 package com.toowe.stwe.controller;
 
-import com.toowe.stwe.dto.BaoguandanResponse;
+import com.toowe.stwe.dto.BaoguandanVO;
 import com.toowe.stwe.service.BaoguandanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,7 +28,7 @@ public class BaoguandanController {
      */
     @GetMapping("/view")
     @Operation(summary = "查询报关单", description = "根据报关单号查询报关单数据（先通过ExecuteBillQuery获取单据编号，再查询详情）")
-    public BaoguandanResponse viewBaoguandan(
+    public BaoguandanVO viewBaoguandan(
             @Parameter(description = "报关单号", example = "310120210519750857", required = true)
             @RequestParam String number) {
         log.info("收到查询报关单请求，Number: {}", number);
