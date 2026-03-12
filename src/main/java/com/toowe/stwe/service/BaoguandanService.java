@@ -87,9 +87,6 @@ public class BaoguandanService {
                     .map(BaoguandanResponse.MultiLanguageText::getFDataValue)
                     .orElse(null);
             result.set("运输条款", terms);
-
-            // FCODE从F_ora_terms的FNumber获取
-            result.set("FCODE", data.getForaTerms().getFNumber());
         }
 
         // 获取结算币别 - 取LocaleId=2025的MultiLanguageText的Name
@@ -102,9 +99,19 @@ public class BaoguandanService {
             result.set("结算币别", currency);
         }
 
-        result.set("FSYMBOL", null);
         result.set("总金额", data.getTotalAmount());
-        result.set("数量", data.getQuantity());
+
+        // 计算分录数量总和
+        Double totalQty = 0.0;
+        if (data.getFEntity() != null && !data.getFEntity().isEmpty()) {
+            totalQty = data.getFEntity().stream()
+                    .filter(e -> e.getFQty() != null)
+                    .mapToDouble(BaoguandanResponse.Entity::getFQty)
+                    .sum();
+        } else {
+            totalQty = data.getQuantity() != null ? data.getQuantity() : 0.0;
+        }
+        result.set("数量", totalQty);
 
         return result.toString();
     }

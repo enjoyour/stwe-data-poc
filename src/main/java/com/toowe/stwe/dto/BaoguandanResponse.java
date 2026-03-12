@@ -56,6 +56,16 @@ public class BaoguandanResponse {
 
         @JsonProperty("FQTY")
         private Double quantity;
+
+        @JsonProperty("FEntity")
+        private List<Entity> fEntity;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Entity {
+        @JsonProperty("FQty")
+        private Double fQty;
     }
 
     @Data
