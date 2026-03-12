@@ -51,7 +51,7 @@ public class BaoguandanResponse {
         @JsonProperty("F_ora_SETTLECURRID")
         private SettleCurrency settleCurrency;
 
-        @JsonProperty("F_STWR_ZAMOUNT")
+        @JsonProperty("F_Stwr_ZAmount")
         private Double totalAmount;
 
         @JsonProperty("FQTY")

@@ -19,7 +19,7 @@ public class BaoguandanService {
     private static final String VIEW_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.View.common.kdsvc";
     private static final String QUERY_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc";
     private static final String AUTH_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.AuthService.ValidateUser.common.kdsvc";
-    private static final int LOCALE_ID = 2025;
+    private static final int LOCALE_ID = 2052;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
