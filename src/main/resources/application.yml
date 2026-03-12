@@ -1,0 +1,48 @@
+server:
+  port: 20263
+  servlet:
+    context-path: /
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  application:
+    name: stwe-data-poc
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    #operations-sorter: order
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      display-name: '测试'
+      paths-to-match: '/**'
+      packages-to-scan: com.toowe.admin.controller
+  default-flat-param-object: true
+
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+    swagger-model-name: 实体类列表
+  documents:
+    - name: 说明文档
+      locations: classpath:markdown/*
+      group: 测试
+  basic:
+    enable: false
+    username: abc
+    password: 123
+  insight:
+    enable: true
+    service-name: boot3
+    secret: S6CsnS8AnPVyb8vvChcdXm4R3p6A6KlAISxBg3IIEgk=
+    server: http://localhost:10086
+    namespace: spring3
