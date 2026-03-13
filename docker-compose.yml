@@ -1,0 +1,16 @@
+services:
+  stwe-data-poc:
+    image: stwe-data-poc:latest
+    container_name: stwe-data-poc
+    ports:
+      - "20263:20263"
+    environment:
+      - CUSTOMS_DATA_BASE_DIR=/app/customs-data
+      - PROMPT_FILE_PATH=/app/prompts/comparison-prompts.md
+      - APP_PY_ENGINE_BASE_URLS=http://remote-parser:30201/azs-unstructured-api/file/parser/
+    volumes:
+      # 挂载海关数据共享目录
+      - ./customs-data:/app/customs-data
+      # 挂载提示词配置文件，支持动态更新无需重启容器
+      - ./prompts/comparison-prompts.md:/app/prompts/comparison-prompts.md
+    restart: always
