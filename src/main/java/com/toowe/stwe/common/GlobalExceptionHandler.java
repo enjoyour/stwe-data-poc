@@ -1,7 +1,5 @@
 package com.toowe.stwe.common;
 
-import com.toowe.fisher.model.resp.R;
-import com.toowe.fisher.model.resp.Resp;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,10 +16,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
-    public R<String> handleException(Exception exception) {
+    public String handleException(Exception exception) {
         System.out.println("exception = " + exception);
         exception.printStackTrace();
-        return Resp.error(exception.getMessage());
+        return exception.getMessage();
     }
 
 }

@@ -30,6 +30,10 @@ app:
   parser-api:
     url: ${APP_PY_ENGINE_BASE_URLS}
     grant-code: test
+  customs-data:
+    # Windows 开发环境示例: D:/azs/share_volumn_01
+    # Linux/Docker 环境示例: /app/customs-share (对应挂载路径)
+    base-dir: ${CUSTOMS_DATA_BASE_DIR:D:/azs/share_volumn_01}
 
 knife4j:
   enable: true
