@@ -56,5 +56,9 @@ knife4j:
     namespace: spring3
 
 k3cloud:
-  url: http://192.168.1.47/K3Cloud
+  url: ${K3CLOUD_URL}
+
+
+# 环境变量配置
+K3CLOUD_URL: http://192.168.1.47/K3Cloud
 APP_PY_ENGINE_BASE_URLS: http://10.10.1.10:30201/azs-unstructured-api/file/parser/

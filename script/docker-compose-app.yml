@@ -1,0 +1,28 @@
+version: "3.3"
+services:
+  
+  stwe-data-poc:
+    hostname: stwe-data-poc
+    container_name: stwe-data-poc
+    image: dockerhub.toowe.com:18443/ai-tools/stwe-data-poc:1.0
+    restart: always
+    environment:
+      JAVA_OPTS: -Xms128m -Xmx1g -XX:+PrintConcurrentLocks -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/heapdumps/stwe-data-poc_heapdump.hprof
+      SPRING_PROFILES_ACTIVE: "prd"
+      K3CLOUD_URL: http://192.168.1.47/K3Cloud
+      APP_PY_ENGINE_BASE_URLS: http://10.10.1.10:30201/azs-unstructured-api/file/parser/
+    ports:
+      - 20263:20263
+    volumes:
+      - ./java-data/stwe-data-poc/logs:/ai-tools/logs
+      - ./heapdumps:/var/heapdumps
+    networks:
+      - ai_tools
+
+
+networks:
+  ai_tools:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.20.0.0/16
