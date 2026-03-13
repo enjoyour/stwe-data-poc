@@ -3,11 +3,15 @@ package com.toowe.stwe.service;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.toowe.stwe.dto.BaoguandanAttachmentVO;
 import com.toowe.stwe.dto.BaoguandanResponse;
 import com.toowe.stwe.util.K3cloudUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -22,6 +26,50 @@ public class BaoguandanService {
     private static final int LOCALE_ID = 2052;  // 这个是定死的,只取2052
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * 获取报关单附件列表
+     */
+    public BaoguandanAttachmentVO getBaoguandanAttachments(String number) {
+        try {
+            // 第零步：登录
+            String authUrl = k3cloudUrl + AUTH_URL_SUFFIX;
+            boolean loginSuccess = K3cloudUtil.login(authUrl, "65f0680c543e6b", "999999", "pop909", 2052);
+            if (!loginSuccess) {
+                throw new RuntimeException("K3Cloud 登录失败");
+            }
+
+            // 第一步：查询单据内码 (FID)
+            String queryUrl = k3cloudUrl + QUERY_URL_SUFFIX;
+            String queryResult = K3cloudUtil.executeBillQuery(queryUrl, number);
+            JSONArray resultArray = new JSONArray(queryResult);
+            if (resultArray.isEmpty()) {
+                throw new RuntimeException("未查询到单据数据");
+            }
+            JSONArray firstRow = resultArray.getJSONArray(0);
+            String interId = firstRow.getStr(2); // 获取第三个值：订单内码
+            log.info("获取到单据内码 (InterId): {}", interId);
+
+            // 第二步：查询附件列表
+            String attachmentResult = K3cloudUtil.queryAttachments(queryUrl, interId);
+            log.info("附件查询结果: {}", attachmentResult);
+
+            // 第三步：封装结果
+            JSONArray attachmentArray = new JSONArray(attachmentResult);
+            List<BaoguandanAttachmentVO.AttachmentItem> items = new ArrayList<>();
+            for (int i = 0; i < attachmentArray.size(); i++) {
+                JSONArray row = attachmentArray.getJSONArray(i);
+                items.add(new BaoguandanAttachmentVO.AttachmentItem(row.getStr(0), row.getStr(1)));
+            }
+
+            // TODO: 后续逻辑完善
+            return new BaoguandanAttachmentVO(items);
+
+        } catch (Exception e) {
+            log.error("获取报关单附件失败，Number: {}", number, e);
+            throw new RuntimeException("获取报关单附件失败: " + e.getMessage());
+        }
+    }
 
     /**
      * 获取报关单数据

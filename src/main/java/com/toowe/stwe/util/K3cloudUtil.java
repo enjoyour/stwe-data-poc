@@ -109,7 +109,7 @@ public class K3cloudUtil {
     public static String executeBillQuery(String url, String number) throws Exception {
         JSONObject data = new JSONObject();
         data.put("FormId", "ora_baoguandan");
-        data.put("FieldKeys", "F_ora_baoguanno,fbillno");
+        data.put("FieldKeys", "F_ora_baoguanno,fbillno,fid");
 
         JSONArray filterArray = new JSONArray();
         JSONObject filter = new JSONObject();
@@ -139,6 +139,51 @@ public class K3cloudUtil {
 
         return HttpRequest.post(url)
                 .form(formParams)
+                .cookie(cookies)
+                .execute()
+                .body();
+    }
+
+    /**
+     * 获取附件列表
+     */
+    public static String queryAttachments(String url, String interId) {
+        JSONObject queryParam = new JSONObject();
+        queryParam.put("FormId", "BOS_Attachment");
+        queryParam.put("FieldKeys", "FFileId,FAttachmentName");
+        queryParam.put("TopRowCount", 0);
+        queryParam.put("Limit", 0);
+        queryParam.put("StartRow", 0);
+
+        JSONArray filterArray = new JSONArray();
+        // 过滤条件 1: FInterID
+        JSONObject filter1 = new JSONObject();
+        filter1.put("FieldName", "FInterID");
+        filter1.put("Compare", "67");
+        filter1.put("Value", interId);
+        filterArray.add(filter1);
+
+        // 过滤条件 2: FBillType
+        JSONObject filter2 = new JSONObject();
+        filter2.put("FieldName", "FBillType");
+        filter2.put("Compare", "67");
+        filter2.put("Value", "ora_baoguandan");
+        filterArray.add(filter2);
+
+        queryParam.put("FilterString", filterArray);
+        queryParam.put("OrderString", "");
+
+        JSONArray parameters = new JSONArray();
+        parameters.add(queryParam);
+
+        JSONObject root = new JSONObject();
+        root.put("parameters", parameters);
+
+        log.info("K3Cloud Request (Attachments) [JSON]: URL={}, Body={}", url, root.toString());
+
+        return HttpRequest.post(url)
+                .header("Content-Type", "application/json")
+                .body(root.toString())
                 .cookie(cookies)
                 .execute()
                 .body();

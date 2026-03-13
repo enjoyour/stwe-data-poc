@@ -1,5 +1,6 @@
 package com.toowe.stwe.controller;
 
+import com.toowe.stwe.dto.BaoguandanAttachmentVO;
 import com.toowe.stwe.service.BaoguandanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,5 +33,17 @@ public class BaoguandanController {
             @RequestParam String number) {
         log.info("收到查询报关单请求，Number: {}", number);
         return baoguandanService.getBaoguandan(number);
+    }
+
+    /**
+     * 获取报关单附件列表
+     */
+    @GetMapping("/attachments")
+    @Operation(summary = "查询报关单附件", description = "获取报关单关联的附件ID和名称列表")
+    public BaoguandanAttachmentVO getAttachments(
+            @Parameter(description = "报关单号", example = "310120210519750857", required = true)
+            @RequestParam String number) {
+        log.info("收到查询附件请求，Number: {}", number);
+        return baoguandanService.getBaoguandanAttachments(number);
     }
 }
