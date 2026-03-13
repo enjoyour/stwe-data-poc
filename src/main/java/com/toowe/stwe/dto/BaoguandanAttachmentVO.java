@@ -18,5 +18,7 @@ public class BaoguandanAttachmentVO {
     public static class AttachmentItem {
         private String fileId;
         private String fileName;
+        private String filePart;
+        private String parsedContent;
     }
 }

@@ -26,6 +26,10 @@ springdoc:
       packages-to-scan: com.toowe.stwe.controller
   default-flat-param-object: true
 
+app:
+  parser-api:
+    url: ${APP_PY_ENGINE_BASE_URLS}
+    grant-code: test
 
 knife4j:
   enable: true
@@ -49,3 +53,4 @@ knife4j:
 
 k3cloud:
   url: http://192.168.1.47/K3Cloud
+APP_PY_ENGINE_BASE_URLS: http://10.10.1.10:30201/azs-unstructured-api/file/parser/

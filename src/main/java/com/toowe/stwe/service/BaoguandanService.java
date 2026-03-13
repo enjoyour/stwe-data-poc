@@ -1,11 +1,14 @@
 package com.toowe.stwe.service;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.toowe.stwe.dto.BaoguandanAttachmentVO;
 import com.toowe.stwe.dto.BaoguandanResponse;
+import com.toowe.stwe.parser.RemoteFileParser;
 import com.toowe.stwe.util.K3cloudUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class BaoguandanService {
 
     @Value("${k3cloud.url}")
@@ -22,10 +26,12 @@ public class BaoguandanService {
 
     private static final String VIEW_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.View.common.kdsvc";
     private static final String QUERY_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc";
+    private static final String DOWNLOAD_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.AttachmentDownLoad.common.kdsvc";
     private static final String AUTH_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.AuthService.ValidateUser.common.kdsvc";
     private static final int LOCALE_ID = 2052;  // 这个是定死的,只取2052
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RemoteFileParser remoteFileParser;
 
     /**
      * 获取报关单附件列表
@@ -54,21 +60,55 @@ public class BaoguandanService {
             String attachmentResult = K3cloudUtil.queryAttachments(queryUrl, interId);
             log.info("附件查询结果: {}", attachmentResult);
 
-            // 第三步：封装结果
+            // 第三步：遍历查询结果，获取每个附件的字节信息并解析内容
+            String downloadUrl = k3cloudUrl + DOWNLOAD_URL_SUFFIX;
             JSONArray attachmentArray = new JSONArray(attachmentResult);
             List<BaoguandanAttachmentVO.AttachmentItem> items = new ArrayList<>();
+
             for (int i = 0; i < attachmentArray.size(); i++) {
                 JSONArray row = attachmentArray.getJSONArray(i);
-                items.add(new BaoguandanAttachmentVO.AttachmentItem(row.getStr(0), row.getStr(1)));
+                String fileId = row.getStr(0);
+                String fileName = row.getStr(1);
+
+                log.info("开始下载文件: {}, FileId: {}", fileName, fileId);
+                String downloadResult = K3cloudUtil.downloadAttachment(downloadUrl, fileId);
+                JSONObject downloadObj = new JSONObject(downloadResult);
+                
+                // 提取 FilePart (Base64 字符串)
+                String filePart = downloadObj.getJSONObject("Result").getStr("FilePart");
+                
+                // Base64 解码为字节数组
+                byte[] fileBytes = Base64.decode(filePart);
+                
+                // 调用远程解析接口
+                log.info("开始解析文件内容: {}", fileName);
+                String parserType = getParserTypeByExtension(fileName);
+                String parsedContent = remoteFileParser.parse(fileBytes, fileName, parserType);
+                
+                // 封装结果，包含解析后的内容
+                items.add(new BaoguandanAttachmentVO.AttachmentItem(fileId, fileName, filePart, parsedContent));
             }
 
-            // TODO: 后续逻辑完善
             return new BaoguandanAttachmentVO(items);
 
         } catch (Exception e) {
             log.error("获取报关单附件失败，Number: {}", number, e);
             throw new RuntimeException("获取报关单附件失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 根据文件扩展名获取解析器类型
+     */
+    private String getParserTypeByExtension(String fileName) {
+        String lowerName = fileName.toLowerCase();
+        if (lowerName.endsWith(".docx"))
+            return "to_html";
+        if (lowerName.endsWith(".xlsx"))
+            return "pipline_html";
+        if (lowerName.endsWith(".pdf"))
+            return "mineru_api";
+        return "normal";
     }
 
     /**

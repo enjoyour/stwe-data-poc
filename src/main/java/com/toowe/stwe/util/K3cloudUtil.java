@@ -194,4 +194,28 @@ public class K3cloudUtil {
                 .execute()
                 .body();
     }
+
+    /**
+     * 下载附件分片
+     */
+    public static String downloadAttachment(String url, String fileId) {
+        JSONObject param = new JSONObject();
+        param.put("FileId", fileId);
+        param.put("StartIndex", 0);
+
+        JSONArray parameters = new JSONArray();
+        parameters.add(param);
+
+        JSONObject root = new JSONObject();
+        root.put("parameters", parameters);
+
+        log.info("K3Cloud Request (Download) [JSON]: URL={}, Body={}", url, root.toString());
+
+        return HttpRequest.post(url)
+                .header("Content-Type", "application/json")
+                .body(root.toString())
+                .cookie(cookies)
+                .execute()
+                .body();
+    }
 }
