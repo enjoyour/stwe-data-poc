@@ -85,8 +85,8 @@ public class BaoguandanService {
                 String parserType = getParserTypeByExtension(fileName);
                 String parsedContent = remoteFileParser.parse(fileBytes, fileName, parserType);
                 
-                // 封装结果，包含解析后的内容
-                items.add(new BaoguandanAttachmentVO.AttachmentItem(fileId, fileName, filePart, parsedContent));
+                // 封装结果，仅包含文件名和解析后的内容
+                items.add(new BaoguandanAttachmentVO.AttachmentItem(fileName, parsedContent));
             }
 
             return new BaoguandanAttachmentVO(items);

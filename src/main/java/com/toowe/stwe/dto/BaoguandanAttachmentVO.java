@@ -16,9 +16,7 @@ public class BaoguandanAttachmentVO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class AttachmentItem {
-        private String fileId;
         private String fileName;
-        private String filePart;
         private String parsedContent;
     }
 }
