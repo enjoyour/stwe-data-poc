@@ -161,6 +161,9 @@ public class K3cloudUtil {
         filter1.put("FieldName", "FInterID");
         filter1.put("Compare", "67");
         filter1.put("Value", interId);
+        filter1.put("Left", "");
+        filter1.put("Right", "");
+        filter1.put("Logic", "0");
         filterArray.add(filter1);
 
         // 过滤条件 2: FBillType
@@ -168,6 +171,9 @@ public class K3cloudUtil {
         filter2.put("FieldName", "FBillType");
         filter2.put("Compare", "67");
         filter2.put("Value", "ora_baoguandan");
+        filter2.put("Left", "");
+        filter2.put("Right", "");
+        filter2.put("Logic", "0");
         filterArray.add(filter2);
 
         queryParam.put("FilterString", filterArray);
