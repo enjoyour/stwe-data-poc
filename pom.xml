@@ -81,11 +81,11 @@
             <scope>test</scope>
         </dependency>
         <!--基础服务依赖-->
-        <dependency>
-            <groupId>com.toowe</groupId>
-            <artifactId>fisher-basic-spring-boot</artifactId>
-            <version>1.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.toowe</groupId>-->
+<!--            <artifactId>fisher-basic-spring-boot</artifactId>-->
+<!--            <version>1.2</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.baomidou</groupId>-->
 <!--            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>-->

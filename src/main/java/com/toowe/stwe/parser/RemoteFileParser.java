@@ -2,12 +2,11 @@ package com.toowe.stwe.parser;
 
 import cn.hutool.http.HttpRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.toowe.fisher.exception.FisherException;
-import com.toowe.fisher.util.CollectionUtils;
 import com.toowe.stwe.dto.ParserResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 @Slf4j
 @Component
@@ -51,24 +50,24 @@ public class RemoteFileParser {
                 ParserResponseDTO parserResp = objectMapper.readValue(responseBody, ParserResponseDTO.class);
                 if (200 != parserResp.getCode()) {
                     log.error("======= 文件解析失败: {}", parserResp.getMsg());
-                    throw FisherException.create(parserResp.getMsg());
+                    return "文件解析失败: " + parserResp.getMsg();
                 }
                 if (!Boolean.TRUE.equals(parserResp.isSuccess())) {
                     log.error("======= 文件解析失败: {}", parserResp.getMsg());
-                    throw FisherException.create(parserResp.getMsg());
+                    return "文件解析失败: " + parserResp.getMsg();
                 }
                 if (parserResp.getData() == null) {
                     log.error("======= 文件解析结果为空");
-                    throw FisherException.create("文件解析结果为空");
+                    return "文件解析结果为空";
                 }
                 if (CollectionUtils.isEmpty(parserResp.getData().getProcessResults())) {
                     log.error("======= 文件解析处理结果列表为空");
-                    throw FisherException.create("文件解析处理结果列表为空");
+                    return "文件解析处理结果列表为空";
                 }
                 ParserResponseDTO.ProcessResult processResult = parserResp.getData().getProcessResults().get(0);
                 if (processResult.getOutput() == null) {
                     log.error("======= 文件解析输出为空");
-                    throw FisherException.create("文件解析输出为空");
+                    return "文件解析输出为空";
                 }
                 String resultTxt = (String) processResult.getOutput().get("result.txt");
                 // 去除字符串中的空字符
