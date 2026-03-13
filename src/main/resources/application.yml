@@ -27,6 +27,10 @@ springdoc:
   default-flat-param-object: true
 
 app:
+  llm-api:
+    url: ${LLM_API_BASE_URL}
+    model: ${LLM_API_MODEL}
+    api-key: ${LLM_API_KEY}
   parser-api:
     url: ${APP_PY_ENGINE_BASE_URLS}
     grant-code: test
@@ -62,3 +66,6 @@ k3cloud:
 # 环境变量配置
 K3CLOUD_URL: http://192.168.1.47/K3Cloud
 APP_PY_ENGINE_BASE_URLS: http://10.10.1.10:30201/azs-unstructured-api/file/parser/
+LLM_API_BASE_URL: http://10.10.1.10:30201/azs-unstructured-api/file/parser/
+LLM_API_MODEL: text-davinci-003
+LLM_API_KEY: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
