@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -123,9 +124,15 @@ public class ComparisonService {
     private void exportComparisonExcel(String number, CustomsDataResult customsData,
                                        String baoguandanData, BaoguandanAttachmentVO attachmentData,
                                        ComparisonResult comparisonResult) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String fileName = String.format("数据比对_%s_%s.xlsx", number, timestamp);
+        // 文件名只使用报关单号，不使用时间戳
+        String fileName = String.format("数据比对_%s.xlsx", number);
         File outputFile = new File(outputDir, fileName);
+
+        // 如果文件已存在，先删除
+        if (outputFile.exists()) {
+            boolean deleted = outputFile.delete();
+            log.info("删除已存在的文件: {}, 删除结果: {}", outputFile.getAbsolutePath(), deleted);
+        }
 
         // 确保输出目录存在
         FileUtil.mkdir(outputFile.getParentFile());
@@ -288,5 +295,31 @@ public class ComparisonService {
                 writer.close();
             }
         }
+    }
+
+    /**
+     * 根据报关单号查找比对结果Excel文件
+     * @param declarationNo 报关单号
+     * @return 找到的Excel文件
+     * @throws RuntimeException 如果文件不存在则抛出异常
+     */
+    public File findComparisonExcelFile(String declarationNo) {
+        File dir = new File(outputDir);
+        if (!dir.exists() || !dir.isDirectory()) {
+            log.warn("输出目录不存在: {}", outputDir);
+            throw new RuntimeException("没有找到对应的比对结果文件，请先进行数据比对");
+        }
+
+        // 文件名格式：数据比对_{报关单号}.xlsx
+        String fileName = String.format("数据比对_%s.xlsx", declarationNo);
+        File file = new File(dir, fileName);
+
+        if (!file.exists()) {
+            log.warn("未找到报关单号 {} 的比对结果Excel文件: {}", declarationNo, file.getAbsolutePath());
+            throw new RuntimeException("没有找到对应的比对结果文件，请先进行数据比对");
+        }
+
+        log.info("找到比对结果Excel文件: {}", file.getAbsolutePath());
+        return file;
     }
 }
