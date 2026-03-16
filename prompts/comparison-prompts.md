@@ -36,27 +36,27 @@
 {
 "no": "",
 "customsCheckResult": {
-"is_match": true,
+"isMatch": true,
 "reason": "a.实际开船日期和出口日期涵义一致 √ b.运输条款和成交方式涵义一致 √ c.结算币别和成交货币的单位涵义一致 √ d.总金额和成交总价一致 √ e.数量和成交数量一致 √"
 },
-"attr_check_result": [
+"attrCheckResult": [
 {
-"rule_name": "《通关无纸化出口放行通知书》验证",
-"is_match": true,
+"ruleName": "《通关无纸化出口放行通知书》验证",
+"isMatch": true,
 "reason": "a.附件存在  √ b.预录入单号和报关单号一致 √",
-"attr_name": "xxxx.pdf"
+"attrName": "xxxx.pdf"
 },
 {
-"rule_name": "《中华人民共和国海关出口获取报关单》验证",
-"is_match": false,
+"ruleName": "《中华人民共和国海关出口获取报关单》验证",
+"isMatch": false,
 "reason": "a.附件存在  √  b.预录入编号和报关单号一致 √  c.运输条款比对一致 ×",
-"attr_name": "xxx.pdf"
+"attrName": "xxx.pdf"
 },
 {
-"rule_name": "《开船提单附件》验证",
-"is_match": false,
+"ruleName": "《开船提单附件》验证",
+"isMatch": false,
 "reason": "a.附件不存在  b.日期比对一致 ×",
-"attr_name": "xxx.pdf"
+"attrName": "xxx.pdf"
 }
 ]
 }

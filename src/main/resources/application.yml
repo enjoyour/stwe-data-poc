@@ -38,6 +38,7 @@ app:
     base-dir: ${CUSTOMS_DATA_BASE_DIR:D:/azs/share_volumn_01}
   comparison:
     prompt-file: ${PROMPT_FILE_PATH:prompts/comparison-prompts.md}
+    output-dir: ${OUTPUT_DIR:./output/comparison}
 
 knife4j:
   enable: true
