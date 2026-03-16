@@ -78,6 +78,8 @@ public class ComparisonService {
 
                 // 调用 LLM 进行比对分析
                 log.info("正在调用 LLM 进行数据比对: {}", number);
+                log.info("系统提示词: {}", systemPrompt);
+                log.info("用户提示词: {}", finalUserPrompt);
                 String comparisonResult = llmClient.callLLM(systemPrompt, finalUserPrompt);
                 vo.setComparisonResult(comparisonResult);
 
