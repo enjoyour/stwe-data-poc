@@ -63,7 +63,6 @@
 
 
 ### USER_PROMPT
-以下是为您准备的数据详情：
 
 <报关单数据>
 {baoguandanData}

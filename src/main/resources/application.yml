@@ -39,6 +39,7 @@ app:
   comparison:
     prompt-file: ${PROMPT_FILE_PATH:prompts/comparison-prompts.md}
     output-dir: ${OUTPUT_DIR:./output/comparison}
+    server-url: ${SERVER_URL:http://localhost:20263}
 
 knife4j:
   enable: true

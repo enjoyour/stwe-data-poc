@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -27,17 +28,52 @@ public class ComparisonController {
 
     private final ComparisonService comparisonService;
 
+    @Value("${app.comparison.server-url}")
+    private String serverUrl;
+
     /**
      * 批量对比报关单数据
      * @param request 比对请求参数，包含报关单号列表
-     * @return 汇总后的对比结果
+     * @return 下载链接
      */
     @PostMapping("/compare")
-    @Operation(summary = "多源数据汇总对比", description = "并发调用K3Cloud业务接口、K3Cloud附件解析接口、海关Excel接口，并合并数据")
-    public List<BaoguandanComparisonVO> compareData(@RequestBody ComparisonRequest request) {
+    @Operation(summary = "多源数据汇总对比", description = "并发调用K3Cloud业务接口、K3Cloud附件解析接口、海关Excel接口，并合并数据，返回下载链接")
+    public String compareData(@RequestBody ComparisonRequest request) {
         log.info("收到批量对比请求，单号总数: {}", request.getNumbers() != null ? request.getNumbers().size() : 0);
 
-        return comparisonService.compareData(request.getNumbers());
+        // 执行数据比对
+        List<BaoguandanComparisonVO> comparisonResults = comparisonService.compareData(request.getNumbers());
+
+        // 如果只有一个报关单号，直接返回下载链接
+        if (comparisonResults.size() == 1) {
+            BaoguandanComparisonVO result = comparisonResults.get(0);
+            String declarationNo = extractDeclarationNo(result);
+            return buildDownloadUrl(declarationNo);
+        }
+
+        // 如果有多个报关单号，返回第一个的下载链接（或者可以根据需求修改逻辑）
+        BaoguandanComparisonVO result = comparisonResults.get(0);
+        String declarationNo = extractDeclarationNo(result);
+        return buildDownloadUrl(declarationNo);
+    }
+
+    /**
+     * 从比对结果中提取报关单号
+     */
+    private String extractDeclarationNo(BaoguandanComparisonVO result) {
+        if (result.getComparisonResult() != null && result.getComparisonResult().getNo() != null) {
+            return result.getComparisonResult().getNo();
+        }
+        // 如果没有从比对结果中获取到，尝试从其他字段获取
+        return "unknown";
+    }
+
+    /**
+     * 构建下载链接
+     */
+    private String buildDownloadUrl(String declarationNo) {
+        return String.format("%s/api/comparison/downloadComparisonResult?declarationNo=%s",
+                serverUrl, declarationNo);
     }
 
     /**
