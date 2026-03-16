@@ -186,7 +186,7 @@ public class ComparisonService {
             // 第三个sheet：比对结果
             writer.setSheet("比对结果");
 
-            // 第一行：5个大标题（不合并单元格，用空字符串填充）
+            // 第一行：5个大标题
             // 报关单数据(0-6列，7列) | 海关数据(7-13列，7列) | 海关核对结果(14列) | 附件核对结果(15列) | 附件内容(16列)
             List<Object> row1Data = new ArrayList<>();
             row1Data.add("报关单数据");  // 0
@@ -197,6 +197,18 @@ public class ComparisonService {
             row1Data.add("附件核对结果");  // 15
             row1Data.add("附件内容");  // 16
             writer.writeRow(row1Data);
+
+            // 合并第一行单元格（使用Apache POI的方式）
+            try {
+                org.apache.poi.ss.usermodel.Sheet sheet = writer.getSheet();
+                // 报关单数据：合并第0行的0-6列（A-G）
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 6));
+                // 海关数据：合并第0行的7-13列（H-N）
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 7, 13));
+                log.debug("第一行单元格合并完成");
+            } catch (Exception e) {
+                log.warn("合并单元格失败，继续执行: {}", e.getMessage());
+            }
 
             // 第二行：具体字段名
             List<String> row2Headers = new ArrayList<>();
