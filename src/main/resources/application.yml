@@ -69,6 +69,6 @@ k3cloud:
 # 环境变量配置
 K3CLOUD_URL: http://192.168.1.47/K3Cloud
 APP_PY_ENGINE_BASE_URLS: http://ddns.enterpriseai.com.cn:30201/azs-unstructured-api/file/parser/
-LLM_API_BASE_URL: https://api.moonshot.cn/v1
+LLM_API_BASE_URL: https://api.moonshot.cn/v1/chat/completions
 LLM_API_MODEL: kimi-k2.5
 LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2

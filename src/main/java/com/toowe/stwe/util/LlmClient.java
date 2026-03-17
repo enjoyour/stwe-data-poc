@@ -24,38 +24,6 @@ public class LlmClient {
     private final LlmProperties properties;
 
 
-    public String callLLM(String systemPrompt, String userPrompt) {
-        try {
-            // 使用 LangChain4j 的 ChatMessage 类型
-            List<ChatMessage> messages = List.of(
-                    dev.langchain4j.data.message.SystemMessage.from(systemPrompt),
-                    dev.langchain4j.data.message.UserMessage.from(userPrompt)
-            );
-
-            // 记录思考模式配置
-            if (!properties.getThinkingEnabled()) {
-                log.info("思考模式已禁用，将传递参数: thinking={{\"type\":\"disabled\"}}");
-            } else {
-                log.info("思考模式已启用");
-            }
-
-            // 动态创建 ChatLanguageModel，使用配置中心指定的模型
-            dev.langchain4j.model.chat.ChatLanguageModel chatModel =
-                    dev.langchain4j.model.openai.OpenAiChatModel.builder()
-                            .apiKey(properties.getApiKey())
-                            .baseUrl(properties.getUrl())
-                            .modelName(properties.getModel())
-                            .build();
-
-            // 调用大模型
-            ChatResponse chatResponse = chatModel.chat(messages);
-            return chatResponse.aiMessage().text();
-        } catch (Exception e) {
-            log.error("调用大模型失败", e);
-            throw new RuntimeException("调用大模型失败：" + e.getMessage(), e);
-        }
-    }
-
     /**
      * 使用HTTP直接调用大模型API，支持传递thinking参数
      */
@@ -76,16 +44,17 @@ public class LlmClient {
                 JSONObject thinking = new JSONObject();
                 thinking.set("type", "disabled");
                 requestBody.set("thinking", thinking);
-                log.info("思考模式已禁用，传递参数: thinking={{\"type\":\"disabled\"}}");
             } else {
                 log.info("思考模式已启用");
             }
 
             // 发送HTTP请求
+            String bodyString = requestBody.toString();
+            log.info("发送HTTP请求: {}", bodyString);
             HttpResponse response = HttpRequest.post(properties.getUrl())
                     .header("Authorization", "Bearer " + properties.getApiKey())
                     .header("Content-Type", "application/json")
-                    .body(requestBody.toString())
+                    .body(bodyString)
                     .execute();
 
             String responseBody = response.body();
