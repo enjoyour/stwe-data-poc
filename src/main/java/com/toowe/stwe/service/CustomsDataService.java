@@ -5,46 +5,35 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import com.toowe.stwe.dto.CustomsDataResult;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CustomsDataService {
 
-    @Value("${app.customs-data.base-dir}")
-    private String baseDir;
+    private final CustomsFileAccessService fileAccessService;
+
     /**
      * 获取并解析海关数据
      * @param targetNumber 目标报关单号 (18位)
      * @return 海关数据结果（包含表头、数据行和汇总JSON）
      */
     public CustomsDataResult getCustomsData(String targetNumber) {
-        log.info("开始查询海关数据，目标单号: {}, 目录: {}", targetNumber, baseDir);
+        log.info("开始查询海关数据，目标单号: {}", targetNumber);
 
-        // 获取文件夹下所有Excel文件并按名称排序
-        File dir = new File(baseDir);
-        if (!dir.exists() || !dir.isDirectory()) {
-            throw new RuntimeException("海关数据目录不存在: " + dir.getAbsolutePath());
-        }
-
-        // 获取所有Excel文件（.xls, .xlsx）
-        List<File> excelFiles = Arrays.stream(Objects.requireNonNull(dir.listFiles()))
-                .filter(f -> f.isFile() && (f.getName().toLowerCase().endsWith(".xls") || f.getName().toLowerCase().endsWith(".xlsx")))
-                .sorted(Comparator.comparing(File::getName))
-                .collect(Collectors.toList());
-
+        // 获取所有Excel文件
+        List<CustomsFileAccessService.FileResource> excelFiles = fileAccessService.listExcelFiles();
         log.info("找到 {} 个Excel文件", excelFiles.size());
 
         if (excelFiles.isEmpty()) {
-            throw new RuntimeException("海关数据目录中没有Excel文件: " + dir.getAbsolutePath());
+            throw new RuntimeException("海关数据目录中没有Excel文件");
         }
 
         // 存储所有匹配的数据
@@ -55,64 +44,67 @@ public class CustomsDataService {
         boolean found = false;
 
         // 依次读取每个Excel文件
-        for (File excelFile : excelFiles) {
-            log.info("正在读取文件: {}", excelFile.getName());
+        for (CustomsFileAccessService.FileResource fileResource : excelFiles) {
+            log.info("正在读取文件: {}", fileResource.getName());
             ExcelReader reader = null;
             try {
-                reader = ExcelUtil.getReader(excelFile);
-                List<Map<String, Object>> allRows = reader.readAll();
+                // 使用文件访问服务获取输入流
+                try (InputStream inputStream = fileResource.getInputStream()) {
+                    reader = ExcelUtil.getReader(inputStream);
+                    List<Map<String, Object>> allRows = reader.readAll();
 
-                if (allRows.isEmpty()) {
-                    log.warn("文件 {} 没有数据", excelFile.getName());
-                    continue;
-                }
+                    if (allRows.isEmpty()) {
+                        log.warn("文件 {} 没有数据", fileResource.getName());
+                        continue;
+                    }
 
-                // 从第一个文件获取表头
-                if (headers.isEmpty()) {
-                    headers = new ArrayList<>(allRows.get(0).keySet());
-                    log.info("获取表头: {}", headers);
-                }
+                    // 从第一个文件获取表头
+                    if (headers.isEmpty()) {
+                        headers = new ArrayList<>(allRows.get(0).keySet());
+                        log.info("获取表头: {}", headers);
+                    }
 
-                // 查找匹配的行
-                for (Map<String, Object> row : allRows) {
-                    Object rawNo = row.get("出口货物报关单号");
-                    if (rawNo == null) continue;
+                    // 查找匹配的行
+                    for (Map<String, Object> row : allRows) {
+                        Object rawNo = row.get("出口货物报关单号");
+                        if (rawNo == null) continue;
 
-                    String fullNo = rawNo.toString();
-                    // 逻辑：去掉后三位进行比较
-                    if (fullNo.length() > 3) {
-                        String matchNo = fullNo.substring(0, fullNo.length() - 3);
-                        if (matchNo.equals(targetNumber)) {
-                            matchedRows.add(row);
-                            found = true;
+                        String fullNo = rawNo.toString();
+                        // 逻辑：去掉后三位进行比较
+                        if (fullNo.length() > 3) {
+                            String matchNo = fullNo.substring(0, fullNo.length() - 3);
+                            if (matchNo.equals(targetNumber)) {
+                                matchedRows.add(row);
+                                found = true;
 
-                            // 汇总金额和数量
-                            Object priceObj = row.getOrDefault("成交总价", 0.0);
-                            Object qtyObj = row.getOrDefault("成交数量", 0.0);
+                                // 汇总金额和数量
+                                Object priceObj = row.getOrDefault("成交总价", 0.0);
+                                Object qtyObj = row.getOrDefault("成交数量", 0.0);
 
-                            if (priceObj != null) {
-                                try {
-                                    sumTotalPrice += Double.parseDouble(priceObj.toString());
-                                } catch (NumberFormatException e) {
-                                    log.warn("无法解析成交总价: {}", priceObj);
+                                if (priceObj != null) {
+                                    try {
+                                        sumTotalPrice += Double.parseDouble(priceObj.toString());
+                                    } catch (NumberFormatException e) {
+                                        log.warn("无法解析成交总价: {}", priceObj);
+                                    }
                                 }
-                            }
-                            if (qtyObj != null) {
-                                try {
-                                    sumQuantity += Double.parseDouble(qtyObj.toString());
-                                } catch (NumberFormatException e) {
-                                    log.warn("无法解析成交数量: {}", qtyObj);
+                                if (qtyObj != null) {
+                                    try {
+                                        sumQuantity += Double.parseDouble(qtyObj.toString());
+                                    } catch (NumberFormatException e) {
+                                        log.warn("无法解析成交数量: {}", qtyObj);
+                                    }
                                 }
-                            }
 
-                            log.info("找到匹配数据: 文件={}, 报关单号={}, 成交总价={}, 成交数量={}",
-                                    excelFile.getName(), fullNo, priceObj, qtyObj);
+                                log.info("找到匹配数据: 文件={}, 报关单号={}, 成交总价={}, 成交数量={}",
+                                        fileResource.getName(), fullNo, priceObj, qtyObj);
+                            }
                         }
                     }
                 }
 
             } catch (Exception e) {
-                log.error("读取文件 {} 失败", excelFile.getName(), e);
+                log.error("读取文件 {} 失败", fileResource.getName(), e);
             } finally {
                 if (reader != null) {
                     reader.close();

@@ -36,7 +36,16 @@ app:
     url: ${APP_PY_ENGINE_BASE_URLS}
     grant-code: test
   customs-data:
+    # 基础目录路径（本地模式使用）
     base-dir: ${CUSTOMS_DATA_BASE_DIR:D:/azs/share_volumn_01}
+    # 访问模式: local（本地）或 remote（远程SMB）
+    access-mode: ${CUSTOMS_DATA_ACCESS_MODE:local}
+    # SMB配置（远程模式使用）
+    smb-host: ${CUSTOMS_DATA_SMB_HOST:192.168.1.3}
+    smb-share-path: ${CUSTOMS_DATA_SMB_SHARE_PATH:/财务部/2-2核算组/23_智能体抓取数据源}
+    smb-username: ${CUSTOMS_DATA_SMB_USERNAME:}
+    smb-password: ${CUSTOMS_DATA_SMB_PASSWORD:}
+    smb-domain: ${CUSTOMS_DATA_SMB_DOMAIN:}
   comparison:
     prompt-file: ${PROMPT_FILE_PATH:prompts/comparison-prompts.md}
     output-dir: ${OUTPUT_DIR:./output/comparison}
@@ -73,3 +82,5 @@ LLM_API_BASE_URL: https://api.moonshot.cn/v1/chat/completions
 LLM_API_MODEL: kimi-k2.5
 LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2
 LLM_THINKING_ENABLED: false
+CUSTOMS_DATA_BASE_DIR: D:/azs/share_volumn_01
+CUSTOMS_DATA_ACCESS_MODE: local
