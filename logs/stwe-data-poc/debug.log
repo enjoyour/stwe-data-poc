@@ -279,3 +279,24 @@ java.net.SocketException: Unexpected end of file from server
 2026-03-12T18:53:30.061+08:00  INFO 23720 --- [stwe-data-poc] [http-nio-20263-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
 2026-03-12T18:53:30.097+08:00  WARN 23720 --- [stwe-data-poc] [http-nio-20263-exec-2] c.g.x.k.s.e.OpenApiExtensionResolver     : (Ignores) Failed to read Markdown files,Error Message:class path resource [markdown/] cannot be resolved to URL because it does not exist 
 2026-03-12T18:53:30.098+08:00  INFO 23720 --- [stwe-data-poc] [http-nio-20263-exec-2] o.springdoc.api.AbstractOpenApiResource  : Init duration for springdoc-openapi is: 29 ms
+2026-03-17T15:07:05.149+08:00  INFO 12052 --- [stwe-data-poc] [main] com.toowe.stwe.AppStarter                : Starting AppStarter using Java 21.0.9 with PID 12052 (E:\project\stwe-data-poc\target\classes started by win10 in E:\project\stwe-data-poc)
+2026-03-17T15:07:05.150+08:00  INFO 12052 --- [stwe-data-poc] [main] com.toowe.stwe.AppStarter                : No active profile set, falling back to 1 default profile: "default"
+2026-03-17T15:07:05.815+08:00  INFO 12052 --- [stwe-data-poc] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 20263 (http)
+2026-03-17T15:07:05.824+08:00  INFO 12052 --- [stwe-data-poc] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-17T15:07:05.825+08:00  INFO 12052 --- [stwe-data-poc] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-03-17T15:07:05.856+08:00  INFO 12052 --- [stwe-data-poc] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-03-17T15:07:05.856+08:00  INFO 12052 --- [stwe-data-poc] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 675 ms
+2026-03-17T15:07:06.216+08:00  INFO 12052 --- [stwe-data-poc] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 20263 (http) with context path '/'
+2026-03-17T15:07:06.221+08:00  INFO 12052 --- [stwe-data-poc] [main] com.toowe.stwe.AppStarter                : Started AppStarter in 1.442 seconds (process running for 2.278)
+2026-03-17T15:07:06.224+08:00  INFO 12052 --- [stwe-data-poc] [main] com.toowe.stwe.AppStarter                : 
+----------------------------------------------------------
+	Application 'stwe-data-poc' is running! Access URLs:
+	Local: 		http://localhost:20263
+	External: 	http://28.0.0.1:20263
+	Doc: 	http://28.0.0.1:20263/doc.html
+----------------------------------------------------------
+2026-03-17T15:07:06.268+08:00  INFO 12052 --- [stwe-data-poc] [http-nio-20263-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-17T15:07:06.268+08:00  INFO 12052 --- [stwe-data-poc] [http-nio-20263-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-03-17T15:07:06.269+08:00  INFO 12052 --- [stwe-data-poc] [http-nio-20263-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-03-17T15:07:06.532+08:00  WARN 12052 --- [stwe-data-poc] [http-nio-20263-exec-3] c.g.x.k.s.e.OpenApiExtensionResolver     : (Ignores) Failed to read Markdown files,Error Message:class path resource [markdown/] cannot be resolved to URL because it does not exist 
+2026-03-17T15:07:06.535+08:00  INFO 12052 --- [stwe-data-poc] [http-nio-20263-exec-3] o.springdoc.api.AbstractOpenApiResource  : Init duration for springdoc-openapi is: 157 ms
