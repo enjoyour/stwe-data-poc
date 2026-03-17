@@ -103,8 +103,14 @@ public class ComparisonService {
                 log.info("正在调用 LLM 进行数据比对: {}", number);
                 log.info("系统提示词: {}", systemPrompt);
                 log.info("用户提示词: {}", finalUserPrompt);
+
+                long startTime = System.currentTimeMillis();
                 String comparisonResultJson = llmClient.callLLM(systemPrompt, finalUserPrompt);
+                long endTime = System.currentTimeMillis();
+                long duration = endTime - startTime;
+
                 log.info("LLM 返回的 JSON 结果: {}", comparisonResultJson);
+                log.info("调用 LLM 耗时: {} ms ({} 秒)", duration, duration / 1000.0);
 
                 // 将 JSON 字符串解析为 ComparisonResult 对象
                 ComparisonResult comparisonResult = JSONUtil.toBean(comparisonResultJson, ComparisonResult.class);
@@ -116,28 +122,15 @@ public class ComparisonService {
                         comparisonResult.getAttrCheckResult().size());
 
                 // 收集比对结果数据（用于导出Excel）
-                if (cData != null && cData.getRows() != null && !cData.getRows().isEmpty()) {
-                    // 如果有多条海关数据，为每条海关数据生成一行
-                    for (Map<String, Object> customsRow : cData.getRows()) {
-                        ComparisonExcelRow excelRow = new ComparisonExcelRow();
-                        excelRow.setNumber(number);
-                        excelRow.setBaoguandanData(bData);
-                        excelRow.setCustomsRow(customsRow);
-                        excelRow.setComparisonResult(comparisonResult);
-                        excelRow.setAttachmentData(aData);
-                        excelRows.add(excelRow);
-                    }
-                    log.info("报关单号 {} 对应 {} 条海关数据", number, cData.getRows().size());
-                } else {
-                    // 如果没有海关数据，仍然生成一行
-                    ComparisonExcelRow excelRow = new ComparisonExcelRow();
-                    excelRow.setNumber(number);
-                    excelRow.setBaoguandanData(bData);
-                    excelRow.setCustomsRow(null);
-                    excelRow.setComparisonResult(comparisonResult);
-                    excelRow.setAttachmentData(aData);
-                    excelRows.add(excelRow);
-                }
+                // 每个报关单号只生成一行，使用汇总后的海关数据
+                ComparisonExcelRow excelRow = new ComparisonExcelRow();
+                excelRow.setNumber(number);
+                excelRow.setBaoguandanData(bData);
+                excelRow.setCustomsSummaryJson(cData != null ? cData.getSummaryJson() : null);
+                excelRow.setComparisonResult(comparisonResult);
+                excelRow.setAttachmentData(aData);
+                excelRows.add(excelRow);
+                log.info("报关单号 {} 添加到比对结果列表", number);
 
             } catch (Exception e) {
                 log.error("处理单号 {} 时发生错误: {}", number, e.getMessage());
@@ -439,16 +432,16 @@ public class ComparisonService {
                     rowData.addAll(Collections.nCopies(7, ""));
                 }
 
-                // 海关数据（7个字段）- 从具体的海关数据行获取
-                if (excelRow.getCustomsRow() != null) {
-                    Map<String, Object> customsRow = excelRow.getCustomsRow();
-                    rowData.add(customsRow.get("出口货物报关单号"));
-                    rowData.add(customsRow.get("出口日期"));
-                    rowData.add(customsRow.get("成交方式"));
-                    rowData.add(customsRow.get("成交单位"));
-                    rowData.add(customsRow.get("成交数量"));
-                    rowData.add(customsRow.get("成交货币"));
-                    rowData.add(customsRow.get("成交总价"));
+                // 海关数据（7个字段）- 从汇总JSON中获取
+                if (excelRow.getCustomsSummaryJson() != null) {
+                    JSONObject cJson = JSONUtil.parseObj(excelRow.getCustomsSummaryJson());
+                    rowData.add(cJson.get("出口货物报关单号"));
+                    rowData.add(cJson.get("出口日期"));
+                    rowData.add(cJson.get("成交方式"));
+                    rowData.add(cJson.get("成交单位"));
+                    rowData.add(cJson.get("成交数量"));
+                    rowData.add(cJson.get("成交货币"));
+                    rowData.add(cJson.get("成交总价"));
                 } else {
                     rowData.addAll(Collections.nCopies(7, ""));
                 }
@@ -520,6 +513,7 @@ public class ComparisonService {
         private String number;
         private String baoguandanData;
         private Map<String, Object> customsRow;
+        private String customsSummaryJson;  // 海关汇总数据JSON
         private ComparisonResult comparisonResult;
         private BaoguandanAttachmentVO attachmentData;
 
@@ -545,6 +539,14 @@ public class ComparisonService {
 
         public void setCustomsRow(Map<String, Object> customsRow) {
             this.customsRow = customsRow;
+        }
+
+        public String getCustomsSummaryJson() {
+            return customsSummaryJson;
+        }
+
+        public void setCustomsSummaryJson(String customsSummaryJson) {
+            this.customsSummaryJson = customsSummaryJson;
         }
 
         public ComparisonResult getComparisonResult() {
