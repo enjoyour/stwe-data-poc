@@ -97,9 +97,11 @@ public class ComparisonService {
                 }
 
                 // 填充用户提示词模板中的变量
+                // 格式化附件数据为文本格式：文件名: 文件内容
+                String attachmentDataText = getAttachmentDataText(aData);
                 String finalUserPrompt = userPromptTemplate
                         .replace("{baoguandanData}", bData != null ? bData : "无数据")
-                        .replace("{attachmentData}", aData != null ? JSONUtil.toJsonStr(aData.getAttachments()) : "无数据")
+                        .replace("{attachmentData}", attachmentDataText)
                         .replace("{customsData}", cData != null ? cData.getSummaryJson() : "无数据");
 
                 // 调用 LLM 进行比对分析
@@ -146,6 +148,22 @@ public class ComparisonService {
         }
 
         throw new RuntimeException("没有生成比对结果文件");
+    }
+
+    private String getAttachmentDataText(BaoguandanAttachmentVO aData) {
+        String attachmentDataText = "无数据";
+        if (aData != null && aData.getAttachments() != null) {
+            StringBuilder sb = new StringBuilder();
+            for (BaoguandanAttachmentVO.AttachmentItem item : aData.getAttachments()) {
+                if (sb.length() > 0) {
+                    sb.append("\n");
+                }
+                sb.append("【").append(item.getFileName()).append("】\n");
+                sb.append(item.getParsedContent());
+            }
+            attachmentDataText = sb.toString();
+        }
+        return attachmentDataText;
     }
 
 
