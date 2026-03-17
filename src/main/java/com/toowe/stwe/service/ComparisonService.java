@@ -49,6 +49,10 @@ public class ComparisonService {
         // 用于存储所有比对结果数据（用于导出Excel）
         List<ComparisonExcelRow> excelRows = new ArrayList<>();
 
+        // 用于存储所有海关数据（用于第一个sheet）
+        List<String> customsHeaders = new ArrayList<>();
+        List<Map<String, Object>> allCustomsRows = new ArrayList<>();
+
         // 提前解析提示词文件
         String systemPrompt = "";
         String userPromptTemplate = "";
@@ -76,6 +80,18 @@ public class ComparisonService {
                 String bData = baoguandanTask.get();
                 BaoguandanAttachmentVO aData = attachmentTask.get();
                 CustomsDataResult cData = customsTask.get();
+
+                // 收集海关数据表头和数据行
+                if (cData != null) {
+                    // 只保存一次表头
+                    if (customsHeaders.isEmpty() && cData.getHeaders() != null && !cData.getHeaders().isEmpty()) {
+                        customsHeaders.addAll(cData.getHeaders());
+                    }
+                    // 收集所有海关数据行
+                    if (cData.getRows() != null && !cData.getRows().isEmpty()) {
+                        allCustomsRows.addAll(cData.getRows());
+                    }
+                }
 
                 // 填充用户提示词模板中的变量
                 String finalUserPrompt = userPromptTemplate
@@ -131,7 +147,7 @@ public class ComparisonService {
 
         // 导出统一的Excel文件
         if (!excelRows.isEmpty()) {
-            exportUnifiedComparisonExcel(excelRows);
+            exportUnifiedComparisonExcel(excelRows, customsHeaders, allCustomsRows);
             // 返回下载链接
             return "/api/comparison/downloadComparisonResult";
         }
@@ -332,8 +348,13 @@ public class ComparisonService {
 
     /**
      * 导出统一比对结果Excel文件（包含所有报关单号的比对结果）
+     * @param excelRows 比对结果数据行
+     * @param customsHeaders 海关数据表头
+     * @param allCustomsRows 所有海关数据行
      */
-    private void exportUnifiedComparisonExcel(List<ComparisonExcelRow> excelRows) {
+    private void exportUnifiedComparisonExcel(List<ComparisonExcelRow> excelRows,
+                                               List<String> customsHeaders,
+                                               List<Map<String, Object>> allCustomsRows) {
         // 生成带时间戳的文件名
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         String fileName = String.format("数据比对结果_%s.xlsx", timestamp);
@@ -346,8 +367,31 @@ public class ComparisonService {
         try {
             writer = ExcelUtil.getWriter(outputFile);
 
-            // 写入比对结果sheet
-            writer.renameSheet("比对结果");
+            // 第一个sheet：海关数据
+            writer.renameSheet("海关数据");
+            if (customsHeaders != null && !customsHeaders.isEmpty()) {
+                // 写入表头
+                writer.writeRow(customsHeaders);
+
+                // 写入数据行
+                if (allCustomsRows != null && !allCustomsRows.isEmpty()) {
+                    for (Map<String, Object> row : allCustomsRows) {
+                        List<Object> rowData = new ArrayList<>();
+                        for (String header : customsHeaders) {
+                            rowData.add(row.get(header));
+                        }
+                        writer.writeRow(rowData);
+                    }
+                    log.info("海关数据写入完成: 表头数={}, 数据行数={}", customsHeaders.size(), allCustomsRows.size());
+                } else {
+                    log.info("海关数据为空，仅写入表头");
+                }
+            } else {
+                log.warn("海关数据表头为空，跳过写入");
+            }
+
+            // 第二个sheet：比对结果
+            writer.setSheet("比对结果");
 
             // 第一行：大标题
             List<Object> row1Data = new ArrayList<>();
