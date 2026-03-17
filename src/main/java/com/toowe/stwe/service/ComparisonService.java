@@ -105,7 +105,7 @@ public class ComparisonService {
                 log.info("用户提示词: {}", finalUserPrompt);
 
                 long startTime = System.currentTimeMillis();
-                String comparisonResultJson = llmClient.callLLM(systemPrompt, finalUserPrompt);
+                String comparisonResultJson = llmClient.callLLMWithThinking(systemPrompt, finalUserPrompt);
                 long endTime = System.currentTimeMillis();
                 long duration = endTime - startTime;
 

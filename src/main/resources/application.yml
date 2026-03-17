@@ -31,6 +31,7 @@ app:
     url: ${LLM_API_BASE_URL}
     model: ${LLM_API_MODEL}
     api-key: ${LLM_API_KEY}
+    thinking-enabled: ${LLM_THINKING_ENABLED:false}
   parser-api:
     url: ${APP_PY_ENGINE_BASE_URLS}
     grant-code: test
