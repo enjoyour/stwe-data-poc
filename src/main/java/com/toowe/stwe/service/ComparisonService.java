@@ -19,11 +19,8 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.io.File;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -46,7 +43,7 @@ public class ComparisonService {
      * @param numbers 报关单号列表
      * @return 下载链接URL
      */
-    public String compareData(List<String> numbers) {
+    public String compareData(Set<String> numbers) {
         log.info("开始进行数据比对，单号总数: {}", numbers.size());
 
         // 用于存储所有比对结果数据（用于导出Excel）

@@ -21,9 +21,6 @@ public class CustomsDataService {
 
     @Value("${app.customs-data.base-dir}")
     private String baseDir;
-
-    private static final String DEFAULT_FILE_NAME = "免退税申报_出口报关单管理_20260202.xls";
-
     /**
      * 获取并解析海关数据
      * @param targetNumber 目标报关单号 (18位)
@@ -153,11 +150,4 @@ public class CustomsDataService {
         return result;
     }
 
-    /**
-     * 获取海关数据 Excel 文件 (保留原方法供参考)
-     */
-    public File getCustomsDataFile(String fileName) {
-        Path filePath = Paths.get(baseDir, fileName);
-        return filePath.toFile();
-    }
 }
