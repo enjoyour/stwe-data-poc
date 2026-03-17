@@ -35,6 +35,11 @@ app:
   parser-api:
     url: ${APP_PY_ENGINE_BASE_URLS}
     grant-code: test
+    # 文件解析器类型配置
+    parser-type:
+      docx: ${PARSER_TYPE_DOCX:to_html}
+      xlsx: ${PARSER_TYPE_XLSX:pipline_html}
+      pdf: ${PARSER_TYPE_PDF:mineru_api}
   customs-data:
     # 基础目录路径（本地模式使用）
     base-dir: ${CUSTOMS_DATA_BASE_DIR:D:/azs/share_volumn_01}
@@ -85,3 +90,7 @@ LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2
 LLM_THINKING_ENABLED: false
 CUSTOMS_DATA_BASE_DIR: D:/azs/share_volumn_01
 CUSTOMS_DATA_ACCESS_MODE: local
+# 文件解析器类型配置
+PARSER_TYPE_DOCX: to_html
+PARSER_TYPE_XLSX: pipline_html
+PARSER_TYPE_PDF: normal

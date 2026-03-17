@@ -21,6 +21,9 @@ services:
       CUSTOMS_DATA_SMB_SHARE_PATH: /财务部/2-2核算组/23_智能体抓取数据源/
       CUSTOMS_DATA_SMB_USERNAME: zhinegti
       CUSTOMS_DATA_SMB_PASSWORD: zhinegti123456
+      PARSER_TYPE_DOCX: to_html
+      PARSER_TYPE_XLSX: pipline_html
+      PARSER_TYPE_PDF: normal
     ports:
       - 20263:20263
     volumes:

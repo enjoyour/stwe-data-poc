@@ -86,15 +86,4 @@ public class RemoteFileParser {
         }
     }
 
-
-    private String getParserTypeByExtension(String fileName) {
-        String lowerName = fileName.toLowerCase();
-        if (lowerName.endsWith(".docx"))
-            return "to_html";
-        if (lowerName.endsWith(".xlsx"))
-            return "pipline_html";
-        if (lowerName.endsWith(".pdf"))
-            return "mineru_api";
-        return "normal";
-    }
 }

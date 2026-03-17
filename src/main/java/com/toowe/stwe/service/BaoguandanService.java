@@ -24,6 +24,15 @@ public class BaoguandanService {
     @Value("${k3cloud.url}")
     private String k3cloudUrl;
 
+    @Value("${app.parser-api.parser-type.docx:to_html}")
+    private String parserTypeDocx;
+
+    @Value("${app.parser-api.parser-type.xlsx:pipline_html}")
+    private String parserTypeXlsx;
+
+    @Value("${app.parser-api.parser-type.pdf:mineru_api}")
+    private String parserTypePdf;
+
     private static final String VIEW_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.View.common.kdsvc";
     private static final String QUERY_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc";
     private static final String DOWNLOAD_URL_SUFFIX = "/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.AttachmentDownLoad.common.kdsvc";
@@ -102,11 +111,11 @@ public class BaoguandanService {
     private String getParserTypeByExtension(String fileName) {
         String lowerName = fileName.toLowerCase();
         if (lowerName.endsWith(".docx"))
-            return "to_html";
+            return parserTypeDocx;
         if (lowerName.endsWith(".xlsx"))
-            return "pipline_html";
+            return parserTypeXlsx;
         if (lowerName.endsWith(".pdf"))
-            return "mineru_api";
+            return parserTypePdf;
         return "normal";
     }
 
