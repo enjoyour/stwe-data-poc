@@ -383,7 +383,38 @@ public class ComparisonService {
                 log.warn("海关数据表头为空，跳过写入");
             }
 
-            // 第二个sheet：比对结果
+            // 第二个sheet：报关单数据
+            writer.setSheet("报关单数据");
+
+            // 报关单数据表头
+            List<String> baoguandanHeaders = List.of("报关单号", "合同协议号", "实际开船日期", "运输条款", "结算币别", "总金额", "数量");
+            writer.writeRow(baoguandanHeaders);
+
+            // 写入报关单数据行
+            boolean hasBaoguandanData = false;
+            for (ComparisonExcelRow excelRow : excelRows) {
+                if (excelRow.getBaoguandanData() != null) {
+                    List<Object> rowData = new ArrayList<>();
+                    JSONObject bgdJson = JSONUtil.parseObj(excelRow.getBaoguandanData());
+                    rowData.add(bgdJson.get("报关单号"));
+                    rowData.add(bgdJson.get("合同协议号"));
+                    rowData.add(bgdJson.get("实际开船日期"));
+                    rowData.add(bgdJson.get("运输条款"));
+                    rowData.add(bgdJson.get("结算币别"));
+                    rowData.add(bgdJson.get("总金额"));
+                    rowData.add(bgdJson.get("数量"));
+                    writer.writeRow(rowData);
+                    hasBaoguandanData = true;
+                }
+            }
+
+            if (hasBaoguandanData) {
+                log.info("报关单数据写入完成，数据行数={}", excelRows.stream().filter(row -> row.getBaoguandanData() != null).count());
+            } else {
+                log.info("报关单数据为空，仅写入表头");
+            }
+
+            // 第三个sheet：比对结果
             writer.setSheet("比对结果");
 
             // 第一行：大标题
