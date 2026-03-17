@@ -18,5 +18,6 @@ public class BaoguandanAttachmentVO {
     public static class AttachmentItem {
         private String fileName;
         private String parsedContent;
+        private String fileId;  // 附件ID，用于生成下载链接
     }
 }

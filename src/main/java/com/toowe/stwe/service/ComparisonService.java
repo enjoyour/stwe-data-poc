@@ -38,6 +38,9 @@ public class ComparisonService {
     @Value("${app.comparison.output-dir}")
     private String outputDir;
 
+    @Value("${k3cloud.url}")
+    private String k3cloudUrl;
+
     /**
      * 批量比对报关单数据
      * @param numbers 报关单号列表
@@ -232,7 +235,7 @@ public class ComparisonService {
             row1Data.addAll(Collections.nCopies(6, ""));  // 8-13
             row1Data.add("海关核对结果");  // 14
             row1Data.add("附件核对结果");  // 15
-            row1Data.add("附件内容");  // 16
+            row1Data.add("附件链接");  // 16
             writer.writeRow(row1Data);
 
             // 合并第一行单元格
@@ -249,7 +252,7 @@ public class ComparisonService {
             List<String> row2Headers = new ArrayList<>();
             row2Headers.addAll(List.of("报关单号", "合同协议号", "实际开船日期", "运输条款", "结算币别", "总金额", "数量"));
             row2Headers.addAll(List.of("出口货物报关单号", "出口日期", "成交方式", "成交单位", "成交数量", "成交货币", "成交总价"));
-            row2Headers.addAll(List.of("海关核对结果", "附件核对结果", "附件内容"));
+            row2Headers.addAll(List.of("海关核对结果", "附件核对结果", "附件链接"));
             writer.writeRow(row2Headers);
 
             // 写入数据行（每个报关单号可能对应多行）
@@ -314,17 +317,24 @@ public class ComparisonService {
                     rowData.add("");
                 }
 
-                // 附件内容
+                // 附件链接
                 if (excelRow.getAttachmentData() != null && excelRow.getAttachmentData().getAttachments() != null) {
-                    StringBuilder attachmentContent = new StringBuilder();
+                    StringBuilder attachmentLinks = new StringBuilder();
                     for (BaoguandanAttachmentVO.AttachmentItem item : excelRow.getAttachmentData().getAttachments()) {
-                        if (attachmentContent.length() > 0) {
-                            attachmentContent.append("\n---\n");
+                        if (attachmentLinks.length() > 0) {
+                            attachmentLinks.append("\n");
                         }
-                        attachmentContent.append("【").append(item.getFileName()).append("】\n");
-                        attachmentContent.append(item.getParsedContent());
+                        // 生成下载链接：http://192.168.1.47/k3cloud/FileUpLoadServices/download.aspx?fileId=xxx
+                        if (item.getFileId() != null && !item.getFileId().isEmpty()) {
+                            String downloadLink = String.format("%s/FileUpLoadServices/download.aspx?fileId=%s",
+                                    k3cloudUrl, item.getFileId());
+                            attachmentLinks.append(item.getFileName()).append(": ").append(downloadLink);
+                        } else {
+                            // 如果没有fileId，显示文件名
+                            attachmentLinks.append(item.getFileName()).append(": (无下载链接)");
+                        }
                     }
-                    rowData.add(attachmentContent.toString());
+                    rowData.add(attachmentLinks.toString());
                 } else {
                     rowData.add("");
                 }
