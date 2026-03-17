@@ -72,3 +72,4 @@ APP_PY_ENGINE_BASE_URLS: http://ddns.enterpriseai.com.cn:30201/azs-unstructured-
 LLM_API_BASE_URL: https://api.moonshot.cn/v1/chat/completions
 LLM_API_MODEL: kimi-k2.5
 LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2
+LLM_THINKING_ENABLED: false

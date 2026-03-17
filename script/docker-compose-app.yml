@@ -10,11 +10,18 @@ services:
       JAVA_OPTS: -Xms128m -Xmx1g -XX:+PrintConcurrentLocks -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/heapdumps/stwe-data-poc_heapdump.hprof
       SPRING_PROFILES_ACTIVE: "prd"
       K3CLOUD_URL: http://192.168.1.47/K3Cloud
-      APP_PY_ENGINE_BASE_URLS: http://10.10.1.10:30201/azs-unstructured-api/file/parser/
+      APP_PY_ENGINE_BASE_URLS: http://192.168.1.137:30201/azs-unstructured-api/file/parser/
+      LLM_API_BASE_URL: https://api.moonshot.cn/v1/chat/completions
+      LLM_API_MODEL: kimi-k2.5
+      LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2
+      LLM_THINKING_ENABLED: false
+      SERVER_URL: http://192.168.1.137:20263
     ports:
       - 20263:20263
     volumes:
       - ./java-data/stwe-data-poc/logs:/ai-tools/logs
+      - ./prompts:/prompts/
+      - ./output:/output/
       - ./heapdumps:/var/heapdumps
     networks:
       - ai_tools
