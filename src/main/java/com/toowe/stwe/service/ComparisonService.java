@@ -43,10 +43,14 @@ public class ComparisonService {
 
     /**
      * 批量比对报关单数据
+     * @param numbers 报关单号列表
+     * @return 下载链接URL
      */
-    public List<BaoguandanComparisonVO> compareData(List<String> numbers) {
+    public String compareData(List<String> numbers) {
         log.info("开始进行数据比对，单号总数: {}", numbers.size());
-        List<BaoguandanComparisonVO> resultList = new ArrayList<>();
+
+        // 用于存储所有比对结果数据（用于导出Excel）
+        List<ComparisonExcelRow> excelRows = new ArrayList<>();
 
         // 提前解析提示词文件
         String systemPrompt = "";
@@ -76,12 +80,6 @@ public class ComparisonService {
                 BaoguandanAttachmentVO aData = attachmentTask.get();
                 CustomsDataResult cData = customsTask.get();
 
-                // 组装 VO
-                BaoguandanComparisonVO vo = new BaoguandanComparisonVO();
-                vo.setBaoguandanData(bData);
-                vo.setAttachmentData(aData);
-                vo.setCustomsData(cData != null ? JSONUtil.parseObj(cData.getSummaryJson()) : null);
-
                 // 填充用户提示词模板中的变量
                 String finalUserPrompt = userPromptTemplate
                         .replace("{baoguandanData}", bData != null ? bData : "无数据")
@@ -97,17 +95,36 @@ public class ComparisonService {
 
                 // 将 JSON 字符串解析为 ComparisonResult 对象
                 ComparisonResult comparisonResult = JSONUtil.toBean(comparisonResultJson, ComparisonResult.class);
-                vo.setComparisonResult(comparisonResult);
 
-                resultList.add(vo);
                 log.info("单号 {} 的数据比对分析完成，解析结果: no={}, 海关检查结果={}, 附件检查项数={}",
                         number,
                         comparisonResult.getNo(),
                         comparisonResult.getCustomsCheckResult().getIsMatch(),
                         comparisonResult.getAttrCheckResult().size());
 
-                // 导出Excel文件
-                exportComparisonExcel(number, cData, bData, aData, comparisonResult);
+                // 收集比对结果数据（用于导出Excel）
+                if (cData != null && cData.getRows() != null && !cData.getRows().isEmpty()) {
+                    // 如果有多条海关数据，为每条海关数据生成一行
+                    for (Map<String, Object> customsRow : cData.getRows()) {
+                        ComparisonExcelRow excelRow = new ComparisonExcelRow();
+                        excelRow.setNumber(number);
+                        excelRow.setBaoguandanData(bData);
+                        excelRow.setCustomsRow(customsRow);
+                        excelRow.setComparisonResult(comparisonResult);
+                        excelRow.setAttachmentData(aData);
+                        excelRows.add(excelRow);
+                    }
+                    log.info("报关单号 {} 对应 {} 条海关数据", number, cData.getRows().size());
+                } else {
+                    // 如果没有海关数据，仍然生成一行
+                    ComparisonExcelRow excelRow = new ComparisonExcelRow();
+                    excelRow.setNumber(number);
+                    excelRow.setBaoguandanData(bData);
+                    excelRow.setCustomsRow(null);
+                    excelRow.setComparisonResult(comparisonResult);
+                    excelRow.setAttachmentData(aData);
+                    excelRows.add(excelRow);
+                }
 
             } catch (Exception e) {
                 log.error("处理单号 {} 时发生错误: {}", number, e.getMessage());
@@ -115,7 +132,14 @@ public class ComparisonService {
             }
         }
 
-        return resultList;
+        // 导出统一的Excel文件
+        if (!excelRows.isEmpty()) {
+            exportUnifiedComparisonExcel(excelRows);
+            // 返回下载链接
+            return "/api/comparison/downloadComparisonResult";
+        }
+
+        throw new RuntimeException("没有生成比对结果文件");
     }
 
     /**
@@ -310,28 +334,226 @@ public class ComparisonService {
     }
 
     /**
-     * 根据报关单号查找比对结果Excel文件
-     * @param declarationNo 报关单号
-     * @return 找到的Excel文件
+     * 导出统一比对结果Excel文件（包含所有报关单号的比对结果）
+     */
+    private void exportUnifiedComparisonExcel(List<ComparisonExcelRow> excelRows) {
+        // 生成带时间戳的文件名
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String fileName = String.format("数据比对结果_%s.xlsx", timestamp);
+        File outputFile = new File(outputDir, fileName);
+
+        // 确保输出目录存在
+        FileUtil.mkdir(outputFile.getParentFile());
+
+        ExcelWriter writer = null;
+        try {
+            writer = ExcelUtil.getWriter(outputFile);
+
+            // 写入比对结果sheet
+            writer.renameSheet("比对结果");
+
+            // 第一行：大标题
+            List<Object> row1Data = new ArrayList<>();
+            row1Data.add("报关单数据");  // 0
+            row1Data.addAll(Collections.nCopies(6, ""));  // 1-6
+            row1Data.add("海关数据");  // 7
+            row1Data.addAll(Collections.nCopies(6, ""));  // 8-13
+            row1Data.add("海关核对结果");  // 14
+            row1Data.add("附件核对结果");  // 15
+            row1Data.add("附件内容");  // 16
+            writer.writeRow(row1Data);
+
+            // 合并第一行单元格
+            try {
+                org.apache.poi.ss.usermodel.Sheet sheet = writer.getSheet();
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 6));
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 7, 13));
+                log.debug("第一行单元格合并完成");
+            } catch (Exception e) {
+                log.warn("合并单元格失败，继续执行: {}", e.getMessage());
+            }
+
+            // 第二行：具体字段名
+            List<String> row2Headers = new ArrayList<>();
+            row2Headers.addAll(List.of("报关单号", "合同协议号", "实际开船日期", "运输条款", "结算币别", "总金额", "数量"));
+            row2Headers.addAll(List.of("出口货物报关单号", "出口日期", "成交方式", "成交单位", "成交数量", "成交货币", "成交总价"));
+            row2Headers.addAll(List.of("海关核对结果", "附件核对结果", "附件内容"));
+            writer.writeRow(row2Headers);
+
+            // 写入数据行（每个报关单号可能对应多行）
+            for (ComparisonExcelRow excelRow : excelRows) {
+                List<Object> rowData = new ArrayList<>();
+
+                // 报关单数据（7个字段）
+                if (excelRow.getBaoguandanData() != null) {
+                    JSONObject bgdJson = JSONUtil.parseObj(excelRow.getBaoguandanData());
+                    rowData.add(bgdJson.get("报关单号"));
+                    rowData.add(bgdJson.get("合同协议号"));
+                    rowData.add(bgdJson.get("实际开船日期"));
+                    rowData.add(bgdJson.get("运输条款"));
+                    rowData.add(bgdJson.get("结算币别"));
+                    rowData.add(bgdJson.get("总金额"));
+                    rowData.add(bgdJson.get("数量"));
+                } else {
+                    rowData.addAll(Collections.nCopies(7, ""));
+                }
+
+                // 海关数据（7个字段）- 从具体的海关数据行获取
+                if (excelRow.getCustomsRow() != null) {
+                    Map<String, Object> customsRow = excelRow.getCustomsRow();
+                    rowData.add(customsRow.get("出口货物报关单号"));
+                    rowData.add(customsRow.get("出口日期"));
+                    rowData.add(customsRow.get("成交方式"));
+                    rowData.add(customsRow.get("成交单位"));
+                    rowData.add(customsRow.get("成交数量"));
+                    rowData.add(customsRow.get("成交货币"));
+                    rowData.add(customsRow.get("成交总价"));
+                } else {
+                    rowData.addAll(Collections.nCopies(7, ""));
+                }
+
+                // 海关核对结果
+                ComparisonResult comparisonResult = excelRow.getComparisonResult();
+                if (comparisonResult != null && comparisonResult.getCustomsCheckResult() != null) {
+                    rowData.add(comparisonResult.getCustomsCheckResult().getIsMatch() ? "匹配" : "不匹配");
+                    if (comparisonResult.getCustomsCheckResult().getReason() != null) {
+                        rowData.set(rowData.size() - 1,
+                                rowData.get(rowData.size() - 1) + ": " + comparisonResult.getCustomsCheckResult().getReason());
+                    }
+                } else {
+                    rowData.add("");
+                }
+
+                // 附件核对结果
+                if (comparisonResult != null && comparisonResult.getAttrCheckResult() != null && !comparisonResult.getAttrCheckResult().isEmpty()) {
+                    StringBuilder attrResult = new StringBuilder();
+                    for (com.toowe.stwe.dto.AttrCheckResult attr : comparisonResult.getAttrCheckResult()) {
+                        if (attrResult.length() > 0) {
+                            attrResult.append("\n");
+                        }
+                        attrResult.append(attr.getRuleName()).append(": ")
+                                .append(attr.getIsMatch() ? "匹配" : "不匹配");
+                        if (attr.getReason() != null) {
+                            attrResult.append("\n").append(attr.getReason());
+                        }
+                    }
+                    rowData.add(attrResult.toString());
+                } else {
+                    rowData.add("");
+                }
+
+                // 附件内容
+                if (excelRow.getAttachmentData() != null && excelRow.getAttachmentData().getAttachments() != null) {
+                    StringBuilder attachmentContent = new StringBuilder();
+                    for (BaoguandanAttachmentVO.AttachmentItem item : excelRow.getAttachmentData().getAttachments()) {
+                        if (attachmentContent.length() > 0) {
+                            attachmentContent.append("\n---\n");
+                        }
+                        attachmentContent.append("【").append(item.getFileName()).append("】\n");
+                        attachmentContent.append(item.getParsedContent());
+                    }
+                    rowData.add(attachmentContent.toString());
+                } else {
+                    rowData.add("");
+                }
+
+                writer.writeRow(rowData);
+            }
+
+            log.info("比对结果写入完成，总行数: {}", excelRows.size());
+            log.info("统一比对结果Excel文件导出成功: {}", outputFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            log.error("导出统一比对结果Excel文件失败", e);
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+    }
+
+    /**
+     * 比对结果Excel行数据
+     */
+    private static class ComparisonExcelRow {
+        private String number;
+        private String baoguandanData;
+        private Map<String, Object> customsRow;
+        private ComparisonResult comparisonResult;
+        private BaoguandanAttachmentVO attachmentData;
+
+        public String getNumber() {
+            return number;
+        }
+
+        public void setNumber(String number) {
+            this.number = number;
+        }
+
+        public String getBaoguandanData() {
+            return baoguandanData;
+        }
+
+        public void setBaoguandanData(String baoguandanData) {
+            this.baoguandanData = baoguandanData;
+        }
+
+        public Map<String, Object> getCustomsRow() {
+            return customsRow;
+        }
+
+        public void setCustomsRow(Map<String, Object> customsRow) {
+            this.customsRow = customsRow;
+        }
+
+        public ComparisonResult getComparisonResult() {
+            return comparisonResult;
+        }
+
+        public void setComparisonResult(ComparisonResult comparisonResult) {
+            this.comparisonResult = comparisonResult;
+        }
+
+        public BaoguandanAttachmentVO getAttachmentData() {
+            return attachmentData;
+        }
+
+        public void setAttachmentData(BaoguandanAttachmentVO attachmentData) {
+            this.attachmentData = attachmentData;
+        }
+    }
+
+    /**
+     * 获取最新的比对结果Excel文件
+     * @return 找到的最新Excel文件
      * @throws RuntimeException 如果文件不存在则抛出异常
      */
-    public File findComparisonExcelFile(String declarationNo) {
+    public File findLatestComparisonExcelFile() {
         File dir = new File(outputDir);
         if (!dir.exists() || !dir.isDirectory()) {
             log.warn("输出目录不存在: {}", outputDir);
-            throw new RuntimeException("没有找到对应的比对结果文件，请先进行数据比对");
+            throw new RuntimeException("没有找到比对结果文件，请先进行数据比对");
         }
 
-        // 文件名格式：数据比对_{报关单号}.xlsx
-        String fileName = String.format("数据比对_%s.xlsx", declarationNo);
-        File file = new File(dir, fileName);
+        // 获取所有以"数据比对结果_"开头的Excel文件
+        File[] files = dir.listFiles((d, name) ->
+                name.startsWith("数据比对结果_") && name.endsWith(".xlsx"));
 
-        if (!file.exists()) {
-            log.warn("未找到报关单号 {} 的比对结果Excel文件: {}", declarationNo, file.getAbsolutePath());
-            throw new RuntimeException("没有找到对应的比对结果文件，请先进行数据比对");
+        if (files == null || files.length == 0) {
+            log.warn("未找到比对结果Excel文件");
+            throw new RuntimeException("没有找到比对结果文件，请先进行数据比对");
         }
 
-        log.info("找到比对结果Excel文件: {}", file.getAbsolutePath());
-        return file;
+        // 按文件修改时间排序，获取最新的文件
+        File latestFile = files[0];
+        for (File file : files) {
+            if (file.lastModified() > latestFile.lastModified()) {
+                latestFile = file;
+            }
+        }
+
+        log.info("找到最新比对结果Excel文件: {}", latestFile.getAbsolutePath());
+        return latestFile;
     }
+
 }

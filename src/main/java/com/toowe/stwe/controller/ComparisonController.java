@@ -41,55 +41,25 @@ public class ComparisonController {
     public String compareData(@RequestBody ComparisonRequest request) {
         log.info("收到批量对比请求，单号总数: {}", request.getNumbers() != null ? request.getNumbers().size() : 0);
 
-        // 执行数据比对
-        List<BaoguandanComparisonVO> comparisonResults = comparisonService.compareData(request.getNumbers());
+        // 执行数据比对并返回下载链接
+        String downloadPath = comparisonService.compareData(request.getNumbers());
 
-        // 如果只有一个报关单号，直接返回下载链接
-        if (comparisonResults.size() == 1) {
-            BaoguandanComparisonVO result = comparisonResults.get(0);
-            String declarationNo = extractDeclarationNo(result);
-            return buildDownloadUrl(declarationNo);
-        }
-
-        // 如果有多个报关单号，返回第一个的下载链接（或者可以根据需求修改逻辑）
-        BaoguandanComparisonVO result = comparisonResults.get(0);
-        String declarationNo = extractDeclarationNo(result);
-        return buildDownloadUrl(declarationNo);
-    }
-
-    /**
-     * 从比对结果中提取报关单号
-     */
-    private String extractDeclarationNo(BaoguandanComparisonVO result) {
-        if (result.getComparisonResult() != null && result.getComparisonResult().getNo() != null) {
-            return result.getComparisonResult().getNo();
-        }
-        // 如果没有从比对结果中获取到，尝试从其他字段获取
-        return "unknown";
-    }
-
-    /**
-     * 构建下载链接
-     */
-    private String buildDownloadUrl(String declarationNo) {
-        return String.format("%s/api/comparison/downloadComparisonResult?declarationNo=%s",
-                serverUrl, declarationNo);
+        // 返回完整的下载URL
+        return serverUrl + downloadPath;
     }
 
     /**
      * 下载比对结果Excel文件
-     * @param declarationNo 报关单号
      * @return Excel文件
      */
     @GetMapping("/downloadComparisonResult")
-    @Operation(summary = "下载比对结果Excel", description = "根据报关单号下载比对结果Excel文件")
-    public ResponseEntity<Resource> downloadComparisonResult(
-            @RequestParam("declarationNo") String declarationNo) {
-        log.info("收到下载请求，报关单号: {}", declarationNo);
+    @Operation(summary = "下载比对结果Excel", description = "下载最新的比对结果Excel文件（包含所有报关单号的比对结果）")
+    public ResponseEntity<Resource> downloadComparisonResult() {
+        log.info("收到下载请求");
 
         try {
-            // 查找Excel文件
-            File excelFile = comparisonService.findComparisonExcelFile(declarationNo);
+            // 查找最新的Excel文件
+            File excelFile = comparisonService.findLatestComparisonExcelFile();
 
             // 创建文件资源
             Resource resource = new FileSystemResource(excelFile);
