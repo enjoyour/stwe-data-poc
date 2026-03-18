@@ -147,12 +147,63 @@ public class RemoteFileParser {
             JSONObject responseJson = JSONUtil.parseObj(responseBody);
             String content = responseJson.getStr("content");
 
+            // 清理文本内容
+            if (content != null) {
+                content = cleanParsedContent(content);
+            }
+
             return content;
 
         } catch (Exception e) {
             log.error("从Moonshot获取文件内容失败", e);
             throw new RuntimeException("获取文件内容失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 清理解析后的文本内容
+     * 去除多余的制表符、空白字符等
+     */
+    private String cleanParsedContent(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+
+        // 去除null字符
+        content = content.replace("\0", "");
+
+        // 将多个连续的制表符替换为单个制表符
+        content = content.replaceAll("\t+", "\t");
+
+        // 去除行首尾的制表符
+        content = content.replaceAll("^\t+|\t+$", "");
+
+        // 去除行首尾的空格
+        content = content.replaceAll("^ +| +$", "");
+
+        // 将连续的空格替换为单个空格
+        content = content.replaceAll(" +", " ");
+
+        // 去除过多的连续换行符（保留最多2个换行）
+        content = content.replaceAll("\n\n\n+", "\n\n");
+
+        // 逐行处理：去除行尾的制表符和空格
+        String[] lines = content.split("\n");
+        StringBuilder cleaned = new StringBuilder();
+        for (String line : lines) {
+            // 去除行尾的制表符和空格
+            line = line.replaceAll("[\t ]+$", "");
+            cleaned.append(line).append("\n");
+        }
+        if (cleaned.length() > 0) {
+            content = cleaned.toString();
+            // 移除最后的换行符
+            if (content.endsWith("\n")) {
+                content = content.substring(0, content.length() - 1);
+            }
+        }
+
+        return content;
     }
 
     /**
@@ -230,9 +281,9 @@ public class RemoteFileParser {
                         return "文件解析输出为空";
                     }
                     String resultTxt = outputJson.getStr("result.txt");
-                    // 去除字符串中的空字符
+                    // 清理文本内容：去除多余的制表符和空白字符
                     if (resultTxt != null) {
-                        resultTxt = resultTxt.replace("\0", "");
+                        resultTxt = cleanParsedContent(resultTxt);
                     }
                     return resultTxt;
                 } else {
