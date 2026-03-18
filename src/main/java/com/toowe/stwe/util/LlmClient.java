@@ -91,6 +91,8 @@ public class LlmClient {
                     JSONObject message = choice.getJSONObject("message");
                     String content = message.getStr("content");
 
+                    // 自动清理markdown代码块标记（防止大模型返回```json标记）
+                    content = cleanMarkdownCodeBlock(content);
                     // 如果重试过，记录成功日志
                     if (attempt > 1) {
                         log.info("API调用成功（重试{}次后）", attempt - 1);
@@ -180,5 +182,38 @@ public class LlmClient {
      */
     private long calculateRetryDelay(int attempt) {
         return retryDelayBase * (1L << (attempt - 1)); // 2^(attempt-1) * baseDelay
+    }
+
+    /**
+     * 清理markdown代码块标记
+     * 防止大模型返回 ```json 或 ``` 等markdown标记
+     */
+    private String cleanMarkdownCodeBlock(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+
+        String trimmed = content.trim();
+
+        // 检测并去除开头的 ```json 或 ``` 标记
+        if (trimmed.startsWith("```json")) {
+            trimmed = trimmed.substring(7);
+        } else if (trimmed.startsWith("```")) {
+            trimmed = trimmed.substring(3);
+        }
+
+        // 去除结尾的 ``` 标记
+        if (trimmed.endsWith("```")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 3);
+        }
+
+        trimmed = trimmed.trim();
+
+        // 如果清理后的内容与原内容不同，记录日志
+        if (!trimmed.equals(content)) {
+            log.info("检测到markdown代码块标记，已自动清理");
+        }
+
+        return trimmed;
     }
 }
