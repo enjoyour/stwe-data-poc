@@ -45,6 +45,10 @@ app:
     model: ${LLM_API_MODEL}  # 大模型名称（如：kimi-k2.5）
     api-key: ${LLM_API_KEY}  # 大模型API密钥
     thinking-enabled: ${LLM_THINKING_ENABLED:false}  # 是否启用思考模式（true:启用，false:禁用）
+    # 重试机制配置（用于处理网络抖动、DNS解析失败等偶发错误）
+    max-retries: ${LLM_API_MAX_RETRIES:3}  # 最大重试次数（默认3次）
+    retry-delay-base: ${LLM_API_RETRY_DELAY_BASE:1000}  # 基础重试延迟（毫秒，默认1000ms，使用指数退避策略）
+    timeout: ${LLM_API_TIMEOUT:60000}  # HTTP请求超时时间（毫秒，默认60秒）
 
   # --- 文件解析API配置 ---
   parser-api:
@@ -119,6 +123,9 @@ LLM_API_BASE_URL: https://api.moonshot.cn/v1/chat/completions  # Moonshot API地
 LLM_API_MODEL: kimi-k2.5  # Kimi模型名称
 LLM_API_KEY: sk-hUygjUKgjvT9xe727YQFNQGFrSNVWf5U2bQkkx2jNBQSK7L2  # API密钥
 LLM_THINKING_ENABLED: false  # 思考模式开关
+LLM_API_MAX_RETRIES: 3  # 最大重试次数（处理网络抖动和DNS解析失败）
+LLM_API_RETRY_DELAY_BASE: 1000  # 重试延迟基础值（毫秒，采用指数退避策略）
+LLM_API_TIMEOUT: 60000  # API请求超时时间（毫秒）
 
 # --- 海关数据配置 ---
 CUSTOMS_DATA_BASE_DIR: D:/azs/share_volumn_01  # 本地海关数据目录
