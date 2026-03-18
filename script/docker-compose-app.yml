@@ -7,7 +7,7 @@ services:
     image: dockerhub.toowe.com:18443/ai-tools/stwe-data-poc:1.0
     restart: always
     environment:
-      JAVA_OPTS: -Xms128m -Xmx1g -XX:+PrintConcurrentLocks -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/heapdumps/stwe-data-poc_heapdump.hprof
+      JAVA_OPTS: -Xms512m -Xmx3072m -XX:+UseG1GC -XX:+PrintConcurrentLocks -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/heapdumps/stwe-data-poc_heapdump.hprof -XX:MaxMetaspaceSize=512m -XX:MetaspaceSize=256m
       SPRING_PROFILES_ACTIVE: "prd"
       K3CLOUD_URL: http://192.168.1.47/K3Cloud
       APP_PY_ENGINE_BASE_URLS: http://192.168.1.137:30201/azs-unstructured-api/file/parser/

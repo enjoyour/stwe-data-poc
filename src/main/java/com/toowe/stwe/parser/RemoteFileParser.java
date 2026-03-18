@@ -182,43 +182,66 @@ public class RemoteFileParser {
                     .execute();
 
             String responseBody = response.body();
-            log.info("Remote Parser Response received (Status: {}, Length: {})", response.getStatus(), responseBody.length());
+            int responseLength = responseBody.length();
+            log.info("Remote Parser Response received (Status: {}, Length: {} bytes, Size: {} MB)",
+                    response.getStatus(), responseLength, responseLength / (1024 * 1024));
 
             if (!response.isOk()) {
                 throw new RuntimeException("接口返回非200状态码: " + response.getStatus() + ", Body: " + responseBody);
             }
 
             try {
-                ParserResponseDTO parserResp = objectMapper.readValue(responseBody, ParserResponseDTO.class);
-                if (200 != parserResp.getCode()) {
-                    log.error("======= 文件解析失败: {}", parserResp.getMsg());
-                    return "文件解析失败: " + parserResp.getMsg();
+                // 使用JSONObject直接解析，只提取需要的字段，避免加载result.json大字段
+                JSONObject responseJson = JSONUtil.parseObj(responseBody);
+                // 检查响应状态
+                Integer code = responseJson.getInt("code");
+                if (code == null || code != 200) {
+                    String msg = responseJson.getStr("msg");
+                    log.error("======= 文件解析失败: {}", msg);
+                    return "文件解析失败: " + msg;
                 }
-                if (!Boolean.TRUE.equals(parserResp.isSuccess())) {
-                    log.error("======= 文件解析失败: {}", parserResp.getMsg());
-                    return "文件解析失败: " + parserResp.getMsg();
+                Boolean success = responseJson.getBool("success");
+                if (success == null || !success) {
+                    String msg = responseJson.getStr("msg");
+                    log.error("======= 文件解析失败: {}", msg);
+                    return "文件解析失败: " + msg;
                 }
-                if (parserResp.getData() == null) {
+                // 获取data对象
+                JSONObject dataJson = responseJson.getJSONObject("data");
+                if (dataJson == null) {
                     log.error("======= 文件解析结果为空");
                     return "文件解析结果为空";
                 }
-                if (CollectionUtils.isEmpty(parserResp.getData().getProcessResults())) {
+                // 获取process_results数组
+                Object processResultsObj = dataJson.get("process_results");
+                if (processResultsObj == null) {
                     log.error("======= 文件解析处理结果列表为空");
                     return "文件解析处理结果列表为空";
                 }
-                ParserResponseDTO.ProcessResult processResult = parserResp.getData().getProcessResults().get(0);
-                if (processResult.getOutput() == null) {
-                    log.error("======= 文件解析输出为空");
-                    return "文件解析输出为空";
+
+                // 提取第一个处理结果的output中的result.txt
+                // 不反序列化整个对象，避免加载result.json大字段
+                Object firstResult = JSONUtil.parseArray(processResultsObj).get(0);
+                if (firstResult instanceof JSONObject) {
+                    JSONObject firstResultJson = (JSONObject) firstResult;
+                    JSONObject outputJson = firstResultJson.getJSONObject("output");
+                    if (outputJson == null) {
+                        log.error("======= 文件解析输出为空");
+                        return "文件解析输出为空";
+                    }
+                    String resultTxt = outputJson.getStr("result.txt");
+                    // 去除字符串中的空字符
+                    if (resultTxt != null) {
+                        resultTxt = resultTxt.replace("\0", "");
+                    }
+                    return resultTxt;
+                } else {
+                    log.error("======= process_results格式错误");
+                    return "文件解析处理结果格式错误";
                 }
-                String resultTxt = (String) processResult.getOutput().get("result.txt");
-                // 去除字符串中的空字符
-                if (resultTxt != null) {
-                    resultTxt = resultTxt.replace("\0", "");
-                }
-                return resultTxt;
+
             } catch (Exception e) {
-                log.error("JSON反序列化失败! 响应内容: {}", responseBody);
+                log.error("解析响应数据失败! 响应长度: {}", responseBody.length(), e);
                 throw new RuntimeException("解析接口返回数据格式错误: " + e.getMessage(), e);
             }
 
