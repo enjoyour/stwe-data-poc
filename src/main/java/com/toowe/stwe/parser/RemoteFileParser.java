@@ -30,6 +30,15 @@ public class RemoteFileParser {
     @Value("${app.llm-api.api-key}")
     private String llmApiKey;
 
+    @Value("${app.llm-api.max-retries:3}")
+    private int maxRetries;
+
+    @Value("${app.llm-api.retry-delay-base:1000}")
+    private int retryDelayBase;
+
+    @Value("${app.llm-api.timeout:60000}")
+    private int timeout;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -84,80 +93,205 @@ public class RemoteFileParser {
     }
 
     /**
-     * 上传文件到Moonshot API
+     * 上传文件到Moonshot API（带重试机制）
      * @param fileBytes 文件字节数组
      * @param fileName 文件名
      * @return file_id
      */
     private String uploadFileToMoonshot(byte[] fileBytes, String fileName) {
-        try {
-            // 使用Hutool上传文件
-            HttpResponse response = HttpRequest.post("https://api.moonshot.cn/v1/files")
-                    .header("Authorization", "Bearer " + llmApiKey)
-                    .form("purpose", "file-extract")
-                    .form("file", fileBytes, fileName)
-                    .timeout(60000)
-                    .execute();
+        Exception lastException = null;
 
-            String responseBody = response.body();
-            log.info("文件上传响应状态: {}", response.getStatus());
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.debug("尝试上传文件到Moonshot (第{}次)", attempt);
 
-            if (!response.isOk()) {
-                throw new RuntimeException("文件上传失败: " + response.getStatus() + ", Body: " + responseBody);
+                // 使用Hutool上传文件
+                HttpResponse response = HttpRequest.post("https://api.moonshot.cn/v1/files")
+                        .header("Authorization", "Bearer " + llmApiKey)
+                        .form("purpose", "file-extract")
+                        .form("file", fileBytes, fileName)
+                        .timeout(timeout)
+                        .execute();
+
+                String responseBody = response.body();
+                log.info("文件上传响应状态: {}", response.getStatus());
+
+                if (!response.isOk()) {
+                    throw new RuntimeException("文件上传失败: " + response.getStatus() + ", Body: " + responseBody);
+                }
+
+                // 解析响应获取file_id
+                JSONObject responseJson = JSONUtil.parseObj(responseBody);
+                String fileId = responseJson.getStr("id");
+
+                if (fileId == null || fileId.isEmpty()) {
+                    throw new RuntimeException("未能获取file_id: " + responseBody);
+                }
+
+                // 如果重试过，记录成功日志
+                if (attempt > 1) {
+                    log.info("文件上传成功（重试{}次后），file_id: {}", attempt - 1, fileId);
+                } else {
+                    log.info("文件上传成功，file_id: {}", fileId);
+                }
+
+                return fileId;
+
+            } catch (cn.hutool.core.io.IORuntimeException e) {
+                lastException = e;
+                Throwable cause = e.getCause();
+
+                // 判断是否为可重试的错误
+                boolean isRetryable = isRetryableError(e, cause);
+
+                if (isRetryable && attempt < maxRetries) {
+                    long delayMs = calculateRetryDelay(attempt);
+                    log.warn("文件上传失败（可重试），第{}次重试将在{}ms后进行。错误类型: {}, 错误信息: {}",
+                            attempt, delayMs, cause != null ? cause.getClass().getSimpleName() : e.getClass().getSimpleName(),
+                            cause != null ? cause.getMessage() : e.getMessage());
+
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("重试被中断", ie);
+                    }
+                    continue;
+                }
+
+                // 不可重试的错误或已达到最大重试次数
+                log.error("上传文件到Moonshot失败（已重试{}次）", attempt - 1, e);
+                throw new RuntimeException("上传文件失败: " + e.getMessage(), e);
+
+            } catch (Exception e) {
+                lastException = e;
+                log.error("上传文件到Moonshot失败（第{}次尝试）", attempt, e);
+
+                // 非网络相关错误直接抛出，不重试
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException("上传文件失败: " + e.getMessage(), e);
             }
-
-            // 解析响应获取file_id
-            JSONObject responseJson = JSONUtil.parseObj(responseBody);
-            String fileId = responseJson.getStr("id");
-
-            if (fileId == null || fileId.isEmpty()) {
-                throw new RuntimeException("未能获取file_id: " + responseBody);
-            }
-
-            return fileId;
-
-        } catch (Exception e) {
-            log.error("上传文件到Moonshot失败", e);
-            throw new RuntimeException("上传文件失败: " + e.getMessage(), e);
         }
+
+        throw new RuntimeException("上传文件到Moonshot失败（已重试" + maxRetries + "次）",
+                lastException != null ? lastException : new Exception("未知错误"));
     }
 
     /**
-     * 从Moonshot API获取文件内容
+     * 从Moonshot API获取文件内容（带重试机制）
      * @param fileId 文件ID
      * @return 文件内容
      */
     private String getFileContentFromMoonshot(String fileId) {
-        try {
-            String url = String.format("https://api.moonshot.cn/v1/files/%s/content", fileId);
+        Exception lastException = null;
 
-            HttpResponse response = HttpRequest.get(url)
-                    .header("Authorization", "Bearer " + llmApiKey)
-                    .timeout(60000)
-                    .execute();
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                log.debug("尝试获取文件内容 (第{}次)", attempt);
 
-            String responseBody = response.body();
-            log.info("获取文件内容响应状态: {}", response.getStatus());
+                String url = String.format("https://api.moonshot.cn/v1/files/%s/content", fileId);
 
-            if (!response.isOk()) {
-                throw new RuntimeException("获取文件内容失败: " + response.getStatus() + ", Body: " + responseBody);
+                HttpResponse response = HttpRequest.get(url)
+                        .header("Authorization", "Bearer " + llmApiKey)
+                        .timeout(timeout)
+                        .execute();
+
+                String responseBody = response.body();
+                log.info("获取文件内容响应状态: {}", response.getStatus());
+
+                if (!response.isOk()) {
+                    throw new RuntimeException("获取文件内容失败: " + response.getStatus() + ", Body: " + responseBody);
+                }
+
+                // 解析响应获取content
+                JSONObject responseJson = JSONUtil.parseObj(responseBody);
+                String content = responseJson.getStr("content");
+
+                // 清理文本内容
+                if (content != null) {
+                    content = cleanParsedContent(content);
+                }
+
+                // 如果重试过，记录成功日志
+                if (attempt > 1) {
+                    log.info("获取文件内容成功（重试{}次后）", attempt - 1);
+                }
+
+                return content;
+
+            } catch (cn.hutool.core.io.IORuntimeException e) {
+                lastException = e;
+                Throwable cause = e.getCause();
+
+                // 判断是否为可重试的错误
+                boolean isRetryable = isRetryableError(e, cause);
+
+                if (isRetryable && attempt < maxRetries) {
+                    long delayMs = calculateRetryDelay(attempt);
+                    log.warn("获取文件内容失败（可重试），第{}次重试将在{}ms后进行。错误类型: {}, 错误信息: {}",
+                            attempt, delayMs, cause != null ? cause.getClass().getSimpleName() : e.getClass().getSimpleName(),
+                            cause != null ? cause.getMessage() : e.getMessage());
+
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("重试被中断", ie);
+                    }
+                    continue;
+                }
+
+                // 不可重试的错误或已达到最大重试次数
+                log.error("从Moonshot获取文件内容失败（已重试{}次）", attempt - 1, e);
+                throw new RuntimeException("获取文件内容失败: " + e.getMessage(), e);
+
+            } catch (Exception e) {
+                lastException = e;
+                log.error("从Moonshot获取文件内容失败（第{}次尝试）", attempt, e);
+
+                // 非网络相关错误直接抛出，不重试
+                if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                }
+                throw new RuntimeException("获取文件内容失败: " + e.getMessage(), e);
             }
-
-            // 解析响应获取content
-            JSONObject responseJson = JSONUtil.parseObj(responseBody);
-            String content = responseJson.getStr("content");
-
-            // 清理文本内容
-            if (content != null) {
-                content = cleanParsedContent(content);
-            }
-
-            return content;
-
-        } catch (Exception e) {
-            log.error("从Moonshot获取文件内容失败", e);
-            throw new RuntimeException("获取文件内容失败: " + e.getMessage(), e);
         }
+
+        throw new RuntimeException("从Moonshot获取文件内容失败（已重试" + maxRetries + "次）",
+                lastException != null ? lastException : new Exception("未知错误"));
+    }
+
+    /**
+     * 判断错误是否可重试
+     */
+    private boolean isRetryableError(cn.hutool.core.io.IORuntimeException e, Throwable cause) {
+        if (cause instanceof java.net.UnknownHostException) {
+            return true;
+        }
+        if (cause instanceof java.net.SocketTimeoutException) {
+            return true;
+        }
+        if (cause instanceof java.net.ConnectException) {
+            return true;
+        }
+        if (e.getMessage() != null) {
+            String msg = e.getMessage();
+            if (msg.contains("Connection reset") ||
+                msg.contains("Connection timed out") ||
+                msg.contains("No route to host")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 计算重试延迟时间（指数退避）
+     */
+    private long calculateRetryDelay(int attempt) {
+        return retryDelayBase * (1L << (attempt - 1));
     }
 
     /**
